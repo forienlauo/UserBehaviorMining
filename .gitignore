@@ -99,3 +99,14 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+
+#############################################
+
+# ide conf
+.idea/
+
+# user conf
+resource/
+tmp/
+tmp.*
