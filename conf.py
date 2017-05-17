@@ -1,10 +1,9 @@
 # coding=utf-8
-import logging
+import json
 import os
+import logging
 
 import sys
-
-ROOT_DIR = os.path.abspath(os.path.basename(__file__))
 
 # log setting
 __LOG_LEVEL = (logging.INFO, logging.ERROR, logging.DEBUG)[-1]
@@ -12,9 +11,12 @@ __LOG_LEVEL = (logging.INFO, logging.ERROR, logging.DEBUG)[-1]
 __LOG_FORMAT = '%(levelname)5s %(asctime)s [%(filename)s line:%(lineno)d] %(message)s'
 logging.basicConfig(format=__LOG_FORMAT, level=__LOG_LEVEL)
 
+ROOT_DIR = os.path.abspath(os.path.basename(__file__))
+
 
 class CDRDataDict(object):
     DEFAULT_SEPARATOR = '|'
+    __DEFAULT_FEATURE_IDX_FILE_PATH = os.path.join(ROOT_DIR, 'resource/original_data/cdr-feature_dict.json')
 
     # enum
     COMMUNICATION_TYPE_ENUMS = {
@@ -28,6 +30,12 @@ class CDRDataDict(object):
         '呼转': 2,
     }
     __feature_idxs = dict()
+
+    @staticmethod
+    def init():
+        with open(CDRDataDict.__DEFAULT_FEATURE_IDX_FILE_PATH) as default_feature_idx_file:
+            default_feature_idx = json.loads(default_feature_idx_file.read())
+            CDRDataDict.reset_feature_idxs_by_user(default_feature_idx)
 
     @staticmethod
     def get_feature_num():
@@ -174,6 +182,12 @@ class ProvinceAvgIncomeDict(object):
                 province = elems[0]
                 avg_income = elems[1]
                 ProvinceAvgIncomeDict.__province2avg_income_dict[province] = float(avg_income)
+
+
+def init():
+    CDRDataDict.init()
+    ProvinceCityLocationDict.init()
+    ProvinceAvgIncomeDict.init()
 
 
 if __name__ == '__main__':
