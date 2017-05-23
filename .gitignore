@@ -106,6 +106,9 @@ ENV/
 # ide conf
 .idea/
 
+# macOS conf
+.DS_Store
+
 # user conf
 resource/
 tmp/
