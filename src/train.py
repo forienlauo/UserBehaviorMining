@@ -74,26 +74,22 @@ def cnn(argv):
     h_pool1 = max_pool(h_conv1, POOL_SHAPE)
     out1 = h_pool1  # shape[_example_cnt, _height1 / 2, _width1 / 2, _out_channels1]
 
-    # # Second Convolutional Layer
-    # _in_channels2 = _out_channels1
-    # _out_channels2 = 64
-    # _example_cnt, _height2, _width2 = -1, _height1 / POOL_STRIDES_H, _width1 / POOL_STRIDES_W
-    # W_conv2 = weight_variable([CONV_HEIGHT, CONV_WIDTH, _in_channels2, _out_channels2])
-    # b_conv2 = bias_variable([_out_channels2])
-    #
-    # in2 = out1  # shape[_example_cnt, _height2, _width2, _in_channels2]
-    # h_conv2 = tf.nn.relu(conv2d(in2, W_conv2) + b_conv2)
-    # h_pool2 = max_pool(h_conv2, POOL_SHAPE)
-    # out2 = h_pool2  # shape[_example_cnt, _height2 / 2, _width2 / 2, _out_channels2]
-    _out_channels2 = _out_channels1
-    _height2 = _height1
-    _width2 = _width1
-    out2 = out1
+    # Second Convolutional Layer
+    _in_channels2 = _out_channels1
+    _out_channels2 = 64
+    _example_cnt, _height2, _width2 = -1, _height1 / CONV_STRIDES_H / POOL_STRIDES_H, _width1 / CONV_STRIDES_W / POOL_STRIDES_W
+    W_conv2 = weight_variable([CONV_HEIGHT, CONV_WIDTH, _in_channels2, _out_channels2])
+    b_conv2 = bias_variable([_out_channels2])
+
+    in2 = out1  # shape[_example_cnt, _height2, _width2, _in_channels2]
+    h_conv2 = tf.nn.relu(conv2d(in2, W_conv2) + b_conv2)
+    h_pool2 = max_pool(h_conv2, POOL_SHAPE)
+    out2 = h_pool2  # shape[_example_cnt, _height2 / 2, _width2 / 2, _out_channels2]
 
     # Densely Connected Layer(Full Connected Layer)
     _in_channels3 = _out_channels2
     _out_channels3 = 1024
-    _example_cnt, _height3, _width3 = -1, _height2 / POOL_STRIDES_H, _width2 / POOL_STRIDES_W
+    _example_cnt, _height3, _width3 = -1, _height2 / CONV_STRIDES_H / POOL_STRIDES_H, _width2 / CONV_STRIDES_W / POOL_STRIDES_W
     W_fc1 = weight_variable([_height3 * _width3 * _in_channels3, _out_channels3])
     b_fc1 = bias_variable([_out_channels3])
 
