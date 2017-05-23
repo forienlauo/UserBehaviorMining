@@ -13,14 +13,18 @@ import numpy as np
 
 
 def cnn(argv):
+    '''支持训练并评估 baseline 级别的输入为任意<height, width, in_channels, target_class_cnt> 的 cnn 模型
+    cnn的样本格式: 每行样本是一张拉成1维的图片(height*weight*in_channels), 外加 one_hot形式的标签(长度为 target_class_cnt )
+        即,每行共有 height*weight*in_channels + target_class_cnt 列
+    @:param argv, 长度为 6 的 list , 分别为<train_data_file_path, test_data_file_path, initial_height, initial_width, initial_chanels, target_class_cnt, >
+    '''
     # argv
     train_data = np.loadtxt(argv[1])
     test_data = np.loadtxt(argv[2])
 
     # configuration
-    initial_height, initial_width = int(argv[3]), int(argv[4])
-    initial_in_chanels = 1
-    target_class_cnt = int(argv[5])
+    initial_height, initial_width, initial_chanels = int(argv[3]), int(argv[4]), int(argv[5])
+    target_class_cnt = int(argv[6])
 
     CONV_STRIDES_H, CONV_STRIDES_W = 1, 1
     CONV_HEIGHT, CONV_WIDTH = 5, 5
@@ -30,8 +34,8 @@ def cnn(argv):
 
     KEEP_PROB = 0.5
 
-    ITERATION = 1000
-    BATCH_SIZE = 50
+    ITERATION = 200
+    BATCH_SIZE = 10
 
     sess = tf.InteractiveSession()
 
@@ -62,41 +66,46 @@ def cnn(argv):
             return example[:, :-target_class_cnt], example[:, -target_class_cnt:]
 
     # First Convolutional Layer
-    _in_channels1 = initial_in_chanels
+    _height1, _width1 = initial_height, initial_width
+    _in_channels1 = initial_chanels
+    x_image = tf.reshape(x, [-1, _height1, _width1, _in_channels1])
+    in1 = x_image  # shape[_example_cnt, _height1, _width1, _in_channels1]
     _out_channels1 = 32
-    _example_cnt, _height1, _width1 = -1, initial_height, initial_width
-    x_image = tf.reshape(x, [_example_cnt, _height1, _width1, _in_channels1])
+
     W_conv1 = weight_variable([CONV_HEIGHT, CONV_WIDTH, _in_channels1, _out_channels1])
     b_conv1 = bias_variable([_out_channels1])
 
-    in1 = x_image  # shape[_example_cnt, _height1, _width1, _in_channels1]
     h_conv1 = tf.nn.relu(conv2d(in1, W_conv1) + b_conv1)
     h_pool1 = max_pool(h_conv1, POOL_SHAPE)
-    out1 = h_pool1  # shape[_example_cnt, _height1 / 2, _width1 / 2, _out_channels1]
+
+    out1 = h_pool1
 
     # Second Convolutional Layer
-    _in_channels2 = _out_channels1
+    in2 = out1  # shape[_example_cnt, _height2, _width2, _in_channels2]
+    _height2, _width2 = out1.get_shape()[1].value, out1.get_shape()[2].value
+    _in_channels2 = out1.get_shape()[3].value
     _out_channels2 = 64
-    _example_cnt, _height2, _width2 = -1, _height1 / CONV_STRIDES_H / POOL_STRIDES_H, _width1 / CONV_STRIDES_W / POOL_STRIDES_W
+
     W_conv2 = weight_variable([CONV_HEIGHT, CONV_WIDTH, _in_channels2, _out_channels2])
     b_conv2 = bias_variable([_out_channels2])
 
-    in2 = out1  # shape[_example_cnt, _height2, _width2, _in_channels2]
     h_conv2 = tf.nn.relu(conv2d(in2, W_conv2) + b_conv2)
     h_pool2 = max_pool(h_conv2, POOL_SHAPE)
-    out2 = h_pool2  # shape[_example_cnt, _height2 / 2, _width2 / 2, _out_channels2]
+
+    out2 = h_pool2
 
     # Densely Connected Layer(Full Connected Layer)
-    _in_channels3 = _out_channels2
-    _out_channels3 = 1024
-    _example_cnt, _height3, _width3 = -1, _height2 / CONV_STRIDES_H / POOL_STRIDES_H, _width2 / CONV_STRIDES_W / POOL_STRIDES_W
-    W_fc1 = weight_variable([_height3 * _width3 * _in_channels3, _out_channels3])
-    b_fc1 = bias_variable([_out_channels3])
-
     in3 = out2  # shape[_example_cnt, _height3, _width3, _in_channels3]
-    h_pool2_flat = tf.reshape(in3, [_example_cnt, _height3 * _width3 * _in_channels3])
+    _height3, _width3 = in3.get_shape()[1].value, in3.get_shape()[2].value
+    _in_channels3 = in3.get_shape()[3].value
+    _out_width3 = 1024
+
+    W_fc1 = weight_variable([_height3 * _width3 * _in_channels3, _out_width3])
+    b_fc1 = bias_variable([_out_width3])
+
+    h_pool2_flat = tf.reshape(in3, [-1, _height3 * _width3 * _in_channels3])
     h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)  # 这不再卷积,直接矩阵乘
-    _out_width3 = _out_channels3
+
     out3 = h_fc1  # shape[_example_cnt, _out_width3]
 
     # Dropout
@@ -107,14 +116,15 @@ def cnn(argv):
     out3 = tmp_out
 
     # Readout Layer
-    _in_width4 = _out_width3
+    in4 = out3  # shape[_example_cnt, _in_width4]
+    _in_width4 = in4.get_shape()[1].value
     _out_width4 = target_class_cnt
-    _example_cnt = -1
+
     W_fc2 = weight_variable([_in_width4, _out_width4])
     b_fc2 = bias_variable([_out_width4])
 
-    in4 = out3  # shape[_example_cnt, _in_width4]
     y_conv = tf.matmul(in4, W_fc2) + b_fc2
+
     out4 = y_conv  # shape[_example_cnt, _out_width4]
 
     # Train
@@ -134,7 +144,7 @@ def cnn(argv):
         if i % 100 == 0:
             train_accuracy = accuracy.eval(feed_dict={
                 x: _X, y_: _Y, keep_prob: 1.0})
-            print("step %d, training accuracy %g" % (i, train_accuracy))
+            logging.info("step %d, training accuracy %g" % (i, train_accuracy))
         train_per_step.run(feed_dict={x: _X, y_: _Y, keep_prob: KEEP_PROB})
     end_time = time.time()
     logging.info("end to train cnn.")
@@ -142,7 +152,7 @@ def cnn(argv):
 
     # Evaluate
     _X, _Y = Utils.format_inputs(test_data)
-    print("test accuracy %g" % accuracy.eval(feed_dict={
+    logging.info("test accuracy %g" % accuracy.eval(feed_dict={
         x: _X, y_: _Y, keep_prob: 1.0}))
 
     sess.close()

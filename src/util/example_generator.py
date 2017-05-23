@@ -80,5 +80,7 @@ class ExampleGenerator(object):
 
 
 if __name__ == '__main__':
-    generator = ExampleGenerator()
-    generator.generate()
+    ExampleGenerator(
+        # height=5 * 60,
+        # weight=20,
+    ).generate()

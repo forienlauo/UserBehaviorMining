@@ -1,3 +1,4 @@
+# coding=utf-8
 import sys
 
 import conf
@@ -5,17 +6,12 @@ import train
 
 if __name__ == '__main__':
     sys.argv.extend([
-        # train_data
-        'tmp/cnn_test/train_data.in',
-        # test_data
-        'tmp/cnn_test/test_data.in',
-        # initial_height
-        str(5 * 60),
-        # initial_width
-        str(10),
-        # target_class_cnt
-        str(2),
+        # cnn argv
+        'tmp/cnn_test/train_data.in', 'tmp/cnn_test/test_data.in',
+        5 * 60, 20, 1,
+        2,
     ])
+    argv = map(lambda x: str(x), sys.argv[1:])
 
     conf.init()
-    train.cnn(sys.argv)
+    train.cnn(argv)
