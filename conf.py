@@ -11,7 +11,7 @@ __LOG_LEVEL = (logging.INFO, logging.ERROR, logging.DEBUG)[-1]
 __LOG_FORMAT = '%(levelname)5s %(asctime)s [%(filename)s line:%(lineno)d] %(message)s'
 logging.basicConfig(format=__LOG_FORMAT, level=__LOG_LEVEL)
 
-ROOT_DIR = os.path.abspath(os.path.basename(__file__))
+ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class CDRDataDict(object):
