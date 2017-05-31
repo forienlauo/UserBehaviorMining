@@ -11,7 +11,7 @@ if __name__ == '__main__':
         5 * 60, 20, 1,
         2,
     ])
-    argv = map(lambda x: str(x), sys.argv[1:])
+    argv = map(lambda x: str(x), sys.argv)
 
     conf.init()
     train.cnn(argv)
