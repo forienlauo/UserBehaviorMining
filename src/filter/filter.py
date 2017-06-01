@@ -159,5 +159,5 @@ def check_data_line(line):
 
 if __name__ == '__main__':
 
-    partitionProcess('/Users/mayuchen/Documents/Python/Repository/UserBehaviorMining/resource/raw/fraud_user', 'fraud_user')
-    partitionProcess('/Users/mayuchen/Documents/Python/Repository/UserBehaviorMining/resource/raw/normal_user', 'normal_user')
+    partitionProcess('../../resource/raw/fraud_user', 'fraud_user')
+    partitionProcess('../../resource/raw/normal_user', 'normal_user')

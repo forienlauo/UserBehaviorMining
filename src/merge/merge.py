@@ -6,7 +6,6 @@ sys.path.append('../../')
 import os
 import pandas as pd
 import numpy as np
-import pickle
 import random
 import sklearn.preprocessing
 from scipy import misc
@@ -15,23 +14,39 @@ class UserBehaviorFeatures():
     """
     用户行为特征提取
     """
-    def __init__(self, file_name):
+    def __init__(self):
         self.interval = 5   #5分钟为采样间隔
         self.sampling_month = 3  # 只取三月数据
         self.sampling_hour = [(7, 12), (12, 17), (17, 22)]  # 每天采样的时间段，单位为小时
-        self.dump_path = '../../resource/merge/' + file_name
+        self.dump_path = '../../resource/merge/'
+        self.columns_name = []
 
     def extrace_and_process(self ,file_path, data_type):
-        train_x = self.get_data(file_path)
-        data_dict = self.before_merge(train_x)
-        feature_dict = {}
-        for key, dataframe in data_dict.items():
-            feature = []
-            for funs in (i for i in dir(self) if i[:3] == 'fe_'):
-                feature.append(pd.DataFrame(getattr(self, funs)(dataframe ,funs)))
-            feature_dict[key] = pd.concat(feature, axis=1)
-        train_x, train_y = self.after_merge(feature_dict, data_type)
-        print("extracing finished")
+        """
+        UserBehaviorFeatures类，函数执行流程
+        :param file_path:
+        :param data_type: fraud_user/normal_user
+        :return:
+        """
+        basename = os.path.basename(file_path)
+        if os.path.exists(self.dump_path + basename + '_train_x.npy'):
+            train_x = np.load(self.dump_path + basename + '_train_x.npy')
+            train_y = np.load(self.dump_path + basename + '_train_y.npy')
+        else:
+            train_x = self.get_data(file_path)
+            data_dict = self.before_merge(train_x)
+            feature_dict = {}
+            for key, dataframe in data_dict.items():
+                feature = []
+                for funs in (i for i in dir(self) if i[:3] == 'fe_'):
+                    feature.append(pd.DataFrame(getattr(self, funs)(dataframe ,funs)))
+                feature_dict[key] = pd.concat(feature, axis=1)
+            train_x, train_y = self.after_merge(feature_dict, data_type)
+
+            np.save(self.dump_path + basename + '_train_x', train_x)
+            np.save(self.dump_path + basename + '_train_y', train_y)
+            print("extracing finished")
+
         return train_x, train_y
 
     def get_data(self, path):
@@ -45,12 +60,11 @@ class UserBehaviorFeatures():
                 else:
                     data_tmp = pd.read_csv(filepath, sep='|')
                     data = pd.concat([data, data_tmp])
-        elif(os.path.isfile(path)):     #输入若是文件名，则是小数量样本集
+        elif(os.path.isfile(path)):      #输入若是文件名，则是小数量样本集
             data = pd.read_csv(path, sep='|')
         else:
             print '########## wrong. ##########'
         return data
-
 
     def before_merge(self, data):
         data['date'] = (data.start_time / 1000000).astype(int)
@@ -82,7 +96,6 @@ class UserBehaviorFeatures():
         return data_dict
 
     def after_merge(self, feature_dict, data_type):
-
         #图片数量
         pic_num = len(feature_dict.keys())
 
@@ -100,26 +113,37 @@ class UserBehaviorFeatures():
             # 补全缺失值
             dataframe.interpolate(inplace=True)
             dataframe.fillna(method='bfill', inplace=True)
+
+            # 若全部为空，则
+            if dataframe.dropna(how='all').empty:
+                continue
             dataframe.fillna(0, inplace=True)
 
-
             columes_list = list(dataframe.columns)
-            for i in range(4):
-                random.shuffle(columes_list)
-                for ind in columes_list:
-                    dataframe.insert(0, '%s_%s' % (ind, i), dataframe[ind])
+            #由于列数较少，所以打乱顺序复制
+            if len(self.columns_name) == 0:
+                for i in range(4):
+                    random.shuffle(columes_list)
+                    self.columns_name.extend(columes_list)
+                print columes_list, self.columns_name
+
+            for i, name in enumerate(self.columns_name):
+                dataframe.insert(0, '%s_%s' % (name, i), dataframe[name])
             # 对列归一化
             data_arr = min_max_scaler.fit_transform(dataframe)
 
-            train_x_list.append(misc.imresize(data_arr, (64, 64)))  # 图片转成64X64
+            train_x_list.append(data_arr)
+            # train_x_list.append(misc.imresize(data_arr, (64, 64)))  # 图片转成64X64
 
-        train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(pic_num, 64, 64)
+        train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(pic_num, 60, 30)
+        # train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(pic_num, 64, 64)
 
         # 对train_y处理
-        train_y = np.ones([pic_num, 1]) if data_type == 'fraud_user' else np.zeros([pic_num, 1])
-
-        np.save(self.dump_path + 'train_x', train_x)
-        np.save(self.dump_path + 'train_y', train_y)
+        train_y_list = []
+        train_y_res = [0, 1] if data_type == 'fraud_user' else [1, 0]
+        for i in range(pic_num):
+            train_y_list.append(train_y_res)
+        train_y = np.asarray(train_y_list, dtype=np.uint8).reshape(pic_num, 2)
 
         return train_x, train_y
 
@@ -129,7 +153,6 @@ class UserBehaviorFeatures():
         call_count = dataframe.groupby(['interval_in_window']).count()['to_num']
         feature_dic[feature_name] = call_count
         return feature_dic
-
 
     def fe_duration(self, dataframe, feature_prefix):
         feature_dic = {}
@@ -159,6 +182,6 @@ class UserBehaviorFeatures():
         return feature_dic
 
 if __name__ == '__main__':
-    users = UserBehaviorFeatures('UserBehaviorMining')
-    train_x, train_y = users.extrace_and_process('./resource/filtered/include/fraud_user_0.txt', 'fraud_user')
-    train_x, train_y = users.extrace_and_process('./resource/filtered/include/normal_user_0.txt', 'normal_user')
+    users = UserBehaviorFeatures()
+    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/fraud_user_0.txt', 'fraud_user')
+    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/normal_user_0.txt', 'normal_user')
