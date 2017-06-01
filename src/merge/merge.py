@@ -46,7 +46,6 @@ class UserBehaviorFeatures():
             np.save(self.dump_path + basename + '_train_x', train_x)
             np.save(self.dump_path + basename + '_train_y', train_y)
             print("extracing finished")
-
         return train_x, train_y
 
     def get_data(self, path):
