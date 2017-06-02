@@ -94,6 +94,7 @@ class UserBehaviorFeatures():
 
         return data_dict
 
+
     def after_merge(self, feature_dict, data_type):
         #图片数量
         pic_num = len(feature_dict.keys())
