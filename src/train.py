@@ -30,9 +30,9 @@ def cnn(argv):
     train_data_x, train_data_y, test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
                                                                argv[_offset:_offset + _length])
     train_data = np.column_stack((train_data_x, train_data_y,))
-    test_data = np.column_stack((test_data_x, test_data_y,))
     del train_data_x
     del train_data_y
+    test_data = np.column_stack((test_data_x, test_data_y,))
     del test_data_x
     del test_data_y
     _offset, _length = _offset + _length, 4

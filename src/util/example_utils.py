@@ -65,6 +65,9 @@ class ExampleGenerator(object):
 
 
 class ExampleAllocator(object):
+    """
+    
+    """
     __DEFAULT_TRAIN_EXAMPLE_PROPORTION = 0.8
 
     __DEFAULT_ALLOCATED_TRAIN_DATA_FILE_PATHS = (
