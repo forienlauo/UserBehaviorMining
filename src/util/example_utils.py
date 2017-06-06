@@ -19,6 +19,12 @@ class ImageConf(object):
 
 
 class ExampleGenerator(object):
+    """样本生成器
+    给定 ImageConf 的参数 <height, width, channels>, 样本数量 exampleCnt 和正样本的近似频率 positiveExampleProportion;
+    将随机生成共 exampleCnt 个样本,其中约 positiveExampleProportion*100% 的样本标记(二分类,one_hot向量)为 正样本, 其余标记为负样本;
+        一张图片保存一行, 依次按照 <channels, width, , height> 排列;
+        结果保存在 dataFilePaths = <dataFilePath_x, dataFilePath_y> 中.
+    """
     __COL_DELEMITER = '\t'
     __LINE_DELEMITER = '\n'
 
@@ -33,13 +39,13 @@ class ExampleGenerator(object):
     def __init__(
             self,
             height=None, weight=None, channels=None,
-            exampleCnt=None, positiveExampleProportion=None, dataFilePath=None,
+            exampleCnt=None, positiveExampleProportion=None, dataFilePaths=None,
     ):
         super(ExampleGenerator, self).__init__()
         self.imageConf = ImageConf(height, weight, channels, )
         self.exampleCnt = exampleCnt or ExampleGenerator.__DEFAULT_EXAMPLE_CNT
         self.positiveExampleProportion = positiveExampleProportion or ExampleGenerator.__DEFAULT_POSITIVE_EXAMPLE_PROPORTION
-        self.generatedDataFilePaths = dataFilePath or ExampleGenerator.__DEFAULT_GENERATED_DATA_FILE_PATHS
+        self.generatedDataFilePaths = dataFilePaths or ExampleGenerator.__DEFAULT_GENERATED_DATA_FILE_PATHS
 
     def generate(self, ):
         with open(self.generatedDataFilePaths[0], 'w') as generatedDataFile_x, \
@@ -65,8 +71,11 @@ class ExampleGenerator(object):
 
 
 class ExampleAllocator(object):
-    """
-    
+    """样本分配器
+    给定 wholeDataFilePaths = <wholeDataFilePath_x, wholeDataFilePath_y> 和训练样本的近似频率 trainExampleProportion;
+    将把 wholeDataFilePaths 中约 trainExampleProportion*100% 的样本分配为 正样本,其余分配为负样本;
+        正样本保存在 trainDataFilePaths = <trainDataFilePath_x, trainDataFilePath_y> 中,
+        负样本保存在 testDataFilePaths = <testDataFilePath_x, testDataFilePath_y> 中.
     """
     __DEFAULT_TRAIN_EXAMPLE_PROPORTION = 0.8
 
