@@ -16,11 +16,25 @@ def cnn(argv):
     '''支持训练并评估 baseline 级别的输入为任意<height, width, in_channels, target_class_cnt> 的 cnn 模型
     cnn的样本格式: 每行样本是一张拉成1维的图片(height*weight*in_channels), 外加 one_hot形式的标签(长度为 target_class_cnt )
         即,每行共有 height*weight*in_channels + target_class_cnt 列
-    @:param argv, 长度为 8 的 list , 分别为<train_data_file_path, test_data_file_path, initial_height, initial_width, initial_chanels, target_class_cnt, iteration, batch_size, >
+    @:param argv, 长度为 11 的 list , 分别为<
+                delimiter,
+                train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path,
+                initial_height, initial_width, initial_chanels, target_class_cnt,
+                iteration, batch_size,
+            >
     '''
     # argv
-    _offset, _length = 1, 2
-    train_data, test_data = map(np.loadtxt, argv[_offset:_offset + _length])
+    _offset, _length = 1, 1
+    delimiter, = argv[_offset:_offset + _length]
+    _offset, _length = _offset + _length, 4
+    train_data_x, train_data_y, test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                                               argv[_offset:_offset + _length])
+    train_data = np.column_stack((train_data_x, train_data_y,))
+    test_data = np.column_stack((test_data_x, test_data_y,))
+    del train_data_x
+    del train_data_y
+    del test_data_x
+    del test_data_y
     _offset, _length = _offset + _length, 4
     initial_height, initial_width, initial_chanels, target_class_cnt = map(int, argv[_offset:_offset + _length])
     _offset, _length = _offset + _length, 2

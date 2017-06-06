@@ -19,10 +19,16 @@ class ImageConf(object):
 
 
 class ExampleGenerator(object):
+    __COL_DELEMITER = '\t'
+    __LINE_DELEMITER = '\n'
+
     __DEFAULT_EXAMPLE_CNT = 1000
     __DEFAULT_POSITIVE_EXAMPLE_PROPORTION = 0.1
 
-    __DEFAULT_GENERATED_DATA_FILE_PATH = os.path.join(conf.ROOT_DIR, 'tmp/cnn_test/data.in')
+    __DEFAULT_GENERATED_DATA_FILE_PATHS = (
+        os.path.join(conf.ROOT_DIR, 'tmp/cnn_test/data_x.in'),
+        os.path.join(conf.ROOT_DIR, 'tmp/cnn_test/data_y.in'),
+    )
 
     def __init__(
             self,
@@ -33,65 +39,82 @@ class ExampleGenerator(object):
         self.imageConf = ImageConf(height, weight, channels, )
         self.exampleCnt = exampleCnt or ExampleGenerator.__DEFAULT_EXAMPLE_CNT
         self.positiveExampleProportion = positiveExampleProportion or ExampleGenerator.__DEFAULT_POSITIVE_EXAMPLE_PROPORTION
-        self.generatedDataFilePath = dataFilePath or ExampleGenerator.__DEFAULT_GENERATED_DATA_FILE_PATH
+        self.generatedDataFilePaths = dataFilePath or ExampleGenerator.__DEFAULT_GENERATED_DATA_FILE_PATHS
 
     def generate(self, ):
-        with open(self.generatedDataFilePath, 'w') as generatedDataFile:
+        with open(self.generatedDataFilePaths[0], 'w') as generatedDataFile_x, \
+                open(self.generatedDataFilePaths[1], 'w') as generatedDataFile_y:
             for _example_iter in range(self.exampleCnt):
-                cols = []
+                cols_x = []
                 for _i in range(self.imageConf.height):
                     for _j in range(self.imageConf.weight):
                         for _k in range(self.imageConf.channels):
-                            cols.append(random.randint(1, 100))
+                            cols_x.append(random.randint(1, 100))
+                line_x = ExampleGenerator.__COL_DELEMITER.join(map(str, cols_x)) + ExampleGenerator.__LINE_DELEMITER
+                generatedDataFile_x.write(line_x)
 
+                cols_y = []
                 if common.new_proportion() < self.positiveExampleProportion:  # 1%的概率是诈骗
-                    cols.extend([1, 0])
+                    cols_y.extend([1, 0])
                 else:  # 其余是非诈骗
-                    cols.extend([0, 1])
-
-                line = '\t'.join(map(lambda x: str(x), cols)) + '\n'
-                generatedDataFile.write(line)
-            return self.generatedDataFilePath
+                    cols_y.extend([0, 1])
+                line_y = ExampleGenerator.__COL_DELEMITER.join(map(str, cols_y)) + ExampleGenerator.__LINE_DELEMITER
+                generatedDataFile_y.write(line_y)
+            return self.generatedDataFilePaths
         raise IOError('Failed to generate examples using givin conf.')
 
 
 class ExampleAllocator(object):
     __DEFAULT_TRAIN_EXAMPLE_PROPORTION = 0.8
 
-    __DEFAULT_ALLOCATED_TRAIN_DATA_FILE_PATH = os.path.join(conf.ROOT_DIR, 'tmp/cnn_test/train_data.in')
-    __DEFAULT_ALLOCATED_TEST_DATA_FILE_PATH = os.path.join(conf.ROOT_DIR, 'tmp/cnn_test/test_data.in')
+    __DEFAULT_ALLOCATED_TRAIN_DATA_FILE_PATHS = (
+        os.path.join(conf.ROOT_DIR, 'tmp/cnn_test/train_data_x.in'),
+        os.path.join(conf.ROOT_DIR, 'tmp/cnn_test/train_data_y.in'),
+    )
+    __DEFAULT_ALLOCATED_TEST_DATA_FILE_PATHS = (
+        os.path.join(conf.ROOT_DIR, 'tmp/cnn_test/test_data_x.in'),
+        os.path.join(conf.ROOT_DIR, 'tmp/cnn_test/test_data_y.in'),
+    )
 
     def __init__(
             self,
-            wholeDataFilePath,
-            trainExampleProportion=None, trainDataFilePath=None, testDataFilePath=None,
+            wholeDataFilePaths,
+            trainExampleProportion=None, trainDataFilePaths=None, testDataFilePaths=None,
     ):
         super(ExampleAllocator, self).__init__()
-        self.wholeDataFilePath = wholeDataFilePath
+        self.wholeDataFilePaths = wholeDataFilePaths
         self.trainExampleProportion = trainExampleProportion or ExampleAllocator.__DEFAULT_TRAIN_EXAMPLE_PROPORTION
-        self.allocatedTrainDataFilePath = trainDataFilePath or ExampleAllocator.__DEFAULT_ALLOCATED_TRAIN_DATA_FILE_PATH
-        self.allocatedTestDataFilePath = testDataFilePath or ExampleAllocator.__DEFAULT_ALLOCATED_TEST_DATA_FILE_PATH
+        self.allocatedTrainDataFilePaths = trainDataFilePaths or ExampleAllocator.__DEFAULT_ALLOCATED_TRAIN_DATA_FILE_PATHS
+        self.allocatedTestDataFilePaths = testDataFilePaths or ExampleAllocator.__DEFAULT_ALLOCATED_TEST_DATA_FILE_PATHS
 
     def allocate(self, ):
-        with open(self.wholeDataFilePath) as whole_data_file, \
-                open(self.allocatedTrainDataFilePath, 'w') as allocatedTrainDataFile, \
-                open(self.allocatedTestDataFilePath, 'w') as allocatedTestDataFile:
-            for line in whole_data_file:
+        with open(self.wholeDataFilePaths[0]) as wholeDataFile_x, \
+                open(self.wholeDataFilePaths[1]) as wholeDataFile_y, \
+                open(self.allocatedTrainDataFilePaths[0], 'w') as allocatedTrainDataFile_x, \
+                open(self.allocatedTrainDataFilePaths[1], 'w') as allocatedTrainDataFile_y, \
+                open(self.allocatedTestDataFilePaths[0], 'w') as allocatedTestDataFile_x, \
+                open(self.allocatedTestDataFilePaths[1], 'w') as allocatedTestDataFile_y:
+            for line_x, line_y in zip(wholeDataFile_x, wholeDataFile_y):
                 if common.new_proportion() < self.trainExampleProportion:  # 80%的样本作为训练数据
-                    allocatedTrainDataFile.write(line)
+                    allocatedTrainDataFile_x.write(line_x)
+                    allocatedTrainDataFile_y.write(line_y)
                 else:  # 其余是测试数据
-                    allocatedTestDataFile.write(line)
-            return self.allocatedTrainDataFilePath, self.allocatedTestDataFilePath
+                    allocatedTestDataFile_x.write(line_x)
+                    allocatedTestDataFile_y.write(line_y)
+            return self.allocatedTrainDataFilePaths, self.allocatedTestDataFilePaths
         raise IOError('Failed to allocate examples using givin conf.')
 
 
 if __name__ == '__main__':
-    conf.init()
-    # generatedDataFilePath = ExampleGenerator(
-    #     height=5 * 60,
-    #     weight=20,
+    # conf.init()
+    # generatedDataFilePaths = ExampleGenerator(
+    #     height=5 * 60, weight=20,
+    #     exampleCnt=1000,
     # ).generate()
-    generatedDataFilePath = '/Users/lauo/PycharmProjects/LinkLand/UserBehaviorMining/tmp/cnn_test/data.in'
-    allocatedTrainDataFilePath, allocatedTestDataFilePath = ExampleAllocator(
-        generatedDataFilePath,
+    generatedDataFilePaths = (
+        '/Users/lauo/PycharmProjects/LinkLand/UserBehaviorMining/tmp/cnn_test/data_x.in',
+        '/Users/lauo/PycharmProjects/LinkLand/UserBehaviorMining/tmp/cnn_test/data_y.in',
+    )
+    allocatedTrainDataFilePaths, allocatedTestDataFilePaths = ExampleAllocator(
+        generatedDataFilePaths,
     ).allocate()
