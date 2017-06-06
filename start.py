@@ -6,18 +6,12 @@ import train
 
 if __name__ == '__main__':
     sys.argv.extend([
-        # # cnn argv
-        # 'tmp/cnn_test/train_data.in', 'tmp/cnn_test/test_data.in',
-        # 5 * 60, 20, 1,
-        # 2,
-        # cnn_reading_from_queue argv
-        'tmp/cnn_test/multi_files/train_data', 'tmp/cnn_test/multi_files/test_data',
+        # cnn argv
+        'tmp/cnn_test/train_data.in', 'tmp/cnn_test/test_data.in',
         5 * 60, 20, 1,
         2,
     ])
     argv = map(lambda x: str(x), sys.argv)
 
     conf.init()
-
-    # train.cnn(argv)
-    train.cnn_reading_from_queue(argv)
+    train.cnn(argv)
