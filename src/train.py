@@ -16,16 +16,17 @@ def cnn(argv):
     '''支持训练并评估 baseline 级别的输入为任意<height, width, in_channels, target_class_cnt> 的 cnn 模型
     cnn的样本格式: 每行样本是一张拉成1维的图片(height*weight*in_channels), 外加 one_hot形式的标签(长度为 target_class_cnt )
         即,每行共有 height*weight*in_channels + target_class_cnt 列
-    @:param argv, 长度为 6 的 list , 分别为<train_data_file_path, test_data_file_path, initial_height, initial_width, initial_chanels, target_class_cnt, >
+    @:param argv, 长度为 8 的 list , 分别为<train_data_file_path, test_data_file_path, initial_height, initial_width, initial_chanels, target_class_cnt, iteration, batch_size, >
     '''
     # argv
-    train_data = np.loadtxt(argv[1])
-    test_data = np.loadtxt(argv[2])
+    _offset, _length = 1, 2
+    train_data, test_data = map(np.loadtxt, argv[_offset:_offset + _length])
+    _offset, _length = _offset + _length, 4
+    initial_height, initial_width, initial_chanels, target_class_cnt = map(int, argv[_offset:_offset + _length])
+    _offset, _length = _offset + _length, 2
+    iteration, batch_size = map(int, argv[_offset:_offset + _length])
 
-    # configuration
-    initial_height, initial_width, initial_chanels = int(argv[3]), int(argv[4]), int(argv[5])
-    target_class_cnt = int(argv[6])
-
+    # cnn configuration
     CONV_STRIDES_H, CONV_STRIDES_W = 1, 1
     CONV_HEIGHT, CONV_WIDTH = 5, 5
 
@@ -33,9 +34,6 @@ def cnn(argv):
     POOL_SHAPE = [1, 2, 2, 1]
 
     KEEP_PROB = 0.5
-
-    ITERATION = 200
-    BATCH_SIZE = 10
 
     sess = tf.InteractiveSession()
 
@@ -137,8 +135,8 @@ def cnn(argv):
     logging.info("start to train cnn.")
     start_time = time.time()
     sess.run(tf.global_variables_initializer())
-    for i in range(ITERATION):
-        batch = random_sample(train_data, BATCH_SIZE)
+    for i in range(iteration):
+        batch = random_sample(train_data, batch_size)
         # print progress
         _X, _Y = Utils.format_inputs(batch)
         if i % 100 == 0:
