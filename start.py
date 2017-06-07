@@ -2,8 +2,8 @@
 import sys
 
 import conf
-from train import CNNTrainer
-from util.example_utils import ExampleAllocator
+from src.train import CNNTrainer
+from src.util.example_utils import ExampleAllocator
 
 if __name__ == '__main__':
     generatedDataFilePaths = ('resource/little_data/data_x.txt', 'resource/little_data/data_y.txt',)

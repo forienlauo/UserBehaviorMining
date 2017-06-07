@@ -2,7 +2,7 @@
 import os
 
 import math
-from util import common
+from src.util import common
 
 
 def split_by_proportion(src_file_path, target_dir_path, split_file_cnt):

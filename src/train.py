@@ -6,7 +6,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from util.sampler import random_sample
+from src.util.sampler import random_sample
 
 
 class CNNTrainer(object):
