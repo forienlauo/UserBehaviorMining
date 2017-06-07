@@ -197,10 +197,9 @@ class UserBehaviorFeatures():
         return feature_dic
 
 if __name__ == '__main__':
+
     users = UserBehaviorFeatures()
     train_x, train_y = users.extrace_and_process('../../resource/filtered/include/fraud_user_19.txt', 'fraud_user')
     train_x, train_y = users.extrace_and_process('../../resource/filtered/include/normal_user_19.txt', 'normal_user')
 
-    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/fraud_user_20.txt', 'fraud_user')
-    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/normal_user_20.txt', 'normal_user')
 
