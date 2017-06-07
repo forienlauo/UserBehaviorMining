@@ -46,6 +46,10 @@ class UserBehaviorFeatures():
             np.save(self.dump_path + basename + '_train_x', train_x)
             np.save(self.dump_path + basename + '_train_y', train_y)
             print("extracing finished")
+        train_x = pd.DataFrame(train_x.reshape(-1, 60*36))
+        train_y = pd.DataFrame(train_y.reshape(-1, 2))
+        train_x.to_csv(self.dump_path + basename + '_train_x.txt', index=False, header=False, sep=',')
+        train_y.to_csv(self.dump_path + basename + '_train_y.txt', index=False, header=False, sep=',')
         return train_x, train_y
 
     def get_data(self, path):
@@ -121,21 +125,32 @@ class UserBehaviorFeatures():
 
             columes_list = list(dataframe.columns)
             #由于列数较少，所以打乱顺序复制
-            if len(self.columns_name) == 0:
-                for i in range(4):
-                    random.shuffle(columes_list)
-                    self.columns_name.extend(columes_list)
-                print columes_list, self.columns_name
+            # if len(self.columns_name) == 0:
+            #     for i in range(4):
+            #         random.shuffle(columes_list)
+            #         self.columns_name.extend(columes_list)
+            #     print columes_list, self.columns_name
+            #列序固定
+            self.columns_name = ['fe_all_call_count_count', 'fe_cost_mean', 'fe_cost_std', 'fe_duration_mean', 'fe_duration_std',
+             'fe_type_median',
+             'fe_all_call_count_count', 'fe_duration_std', 'fe_duration_mean', 'fe_cost_std', 'fe_cost_mean',
+             'fe_type_median',
+             'fe_all_call_count_count', 'fe_duration_std', 'fe_cost_std', 'fe_duration_mean', 'fe_cost_mean',
+             'fe_type_median',
+             'fe_all_call_count_count', 'fe_type_median', 'fe_cost_std', 'fe_duration_mean', 'fe_cost_mean',
+             'fe_duration_std',
+             'fe_duration_std', 'fe_all_call_count_count', 'fe_type_median', 'fe_duration_mean', 'fe_cost_std',
+             'fe_cost_mean']
 
             for i, name in enumerate(self.columns_name):
                 dataframe.insert(0, '%s_%s' % (name, i), dataframe[name])
             # 对列归一化
             data_arr = min_max_scaler.fit_transform(dataframe)
 
-            train_x_list.append(data_arr)
-            # train_x_list.append(misc.imresize(data_arr, (64, 64)))  # 图片转成64X64
+            # train_x_list.append(data_arr)
+            train_x_list.append(misc.imresize(data_arr, (60, 36)))  # 图片转成64X64
 
-        train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(pic_num, 60, 30)
+        train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(pic_num, 60, 36)
         # train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(pic_num, 64, 64)
 
         # 对train_y处理
@@ -183,5 +198,9 @@ class UserBehaviorFeatures():
 
 if __name__ == '__main__':
     users = UserBehaviorFeatures()
-    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/fraud_user_0.txt', 'fraud_user')
-    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/normal_user_0.txt', 'normal_user')
+    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/fraud_user_19.txt', 'fraud_user')
+    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/normal_user_19.txt', 'normal_user')
+
+    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/fraud_user_20.txt', 'fraud_user')
+    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/normal_user_20.txt', 'normal_user')
+
