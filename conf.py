@@ -1,9 +1,9 @@
 # coding=utf-8
 import json
-import os
 import logging
-
+import os
 import sys
+from multiprocessing import cpu_count
 
 # log setting
 __LOG_LEVEL = (logging.INFO, logging.ERROR, logging.DEBUG)[-1]
@@ -14,6 +14,8 @@ logging.basicConfig(format=__LOG_FORMAT, level=__LOG_LEVEL)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+
+CPU_COUNT = cpu_count()
 
 
 class CDRDataDict(object):

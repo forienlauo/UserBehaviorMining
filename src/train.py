@@ -6,6 +6,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
+import conf
 from src.util.sampler import random_sample
 
 
@@ -152,15 +153,21 @@ class CNNTrainer(object):
         """支持训练并评估 baseline 级别的输入为任意<height, width, in_channels, target_class_cnt> 的 cnn 模型
         cnn的样本格式: 每行样本是一张拉成1维的图片(height*weight*in_channels), 外加 one_hot形式的标签(长度为 target_class_cnt )
             即,每行共有 height*weight*in_channels + target_class_cnt 列
-        @:param argv, 长度为 12 的 list , 分别为<
-                    delimiter,
-                    train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path,
-                    initial_height, initial_width, initial_channels, target_class_cnt,
-                    iteration, batch_size,
-                    model_file_path,
-                >
+        @:param argv list,
+                    argv[0]: 启动文件名;
+                    argv[1:13]为必选项, <
+                        delimiter,
+                        train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path,
+                        initial_height, initial_width, initial_channels, target_class_cnt,
+                        iteration, batch_size,
+                        model_file_path,
+                    >;
+                    argv[13:]为可选项, [
+                        cpu_count,
+                    ]
         """
         # argv
+        # required
         _offset, _length = 1, 1
         delimiter, = argv[_offset:_offset + _length]
         _offset, _length = _offset + _length, 4
@@ -172,6 +179,11 @@ class CNNTrainer(object):
         iteration, batch_size = map(int, argv[_offset:_offset + _length])
         _offset, _length = _offset + _length, 1
         model_file_path, = argv[_offset:_offset + _length]
+        # optional
+        _offset, _length = _offset + _length, 1
+        cpu_count = conf.CPU_COUNT
+        if len(argv) > _offset:
+            cpu_count, = map(int, argv[_offset:_offset + _length])
 
         # Construct
         # input and labels
@@ -184,15 +196,26 @@ class CNNTrainer(object):
             x, y_, keep_prob,
         )
 
-        with tf.Session() as sess:
+        config = tf.ConfigProto(
+            device_count={"CPU": cpu_count},
+            inter_op_parallelism_threads=cpu_count,
+            intra_op_parallelism_threads=cpu_count,
+        )
+
+        with tf.Session(config=config) as sess:
             # load data
             logging.info("start to load data.")
             start_time = time.time()
-            train_data_x, train_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
-                                             (train_data_x_file_path, train_data_y_file_path,))
-            train_data = np.column_stack((train_data_x, train_data_y,))
-            del train_data_x
-            del train_data_y
+            cache_file_path = "tmp/cache/train_data.npy"
+            if os.path.exists(cache_file_path):
+                train_data = np.load(cache_file_path)
+            else:
+                train_data_x, train_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                                 (train_data_x_file_path, train_data_y_file_path,))
+                train_data = np.column_stack((train_data_x, train_data_y,))
+                del train_data_x
+                del train_data_y
+                np.save(cache_file_path, train_data)
             end_time = time.time()
             logging.info("end to load data.")
             logging.info('cost time: %.2fs' % (end_time - start_time))
@@ -216,15 +239,20 @@ class CNNTrainer(object):
             CNNTrainer.dump(sess, model_file_path)
             logging.info("dump model into: %s" % model_file_path)
 
-        with tf.Session() as sess:
+        with tf.Session(config=config) as sess:
             # load data
             logging.info("start to load data.")
             start_time = time.time()
-            test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
-                                           (test_data_x_file_path, test_data_y_file_path,))
-            test_data = np.column_stack((test_data_x, test_data_y,))
-            del test_data_x
-            del test_data_y
+            cache_file_path = "tmp/cache/test_data.npy"
+            if os.path.exists(cache_file_path):
+                test_data = np.load(cache_file_path)
+            else:
+                test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                               (test_data_x_file_path, test_data_y_file_path,))
+                test_data = np.column_stack((test_data_x, test_data_y,))
+                del test_data_x
+                del test_data_y
+                np.save(cache_file_path, test_data)
             end_time = time.time()
             logging.info("end to load data.")
             logging.info('cost time: %.2fs' % (end_time - start_time))
@@ -237,7 +265,7 @@ class CNNTrainer(object):
             logging.info("load model from: %s" % model_file_path)
 
             # evaluate
-            logging.info("start to train.")
+            logging.info("start to evaluate.")
             start_time = time.time()
             train_accuracy = CNNTrainer.evaluate(
                 sess,
