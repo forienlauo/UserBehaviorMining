@@ -274,7 +274,7 @@ class CNNTrainer(object):
         for i in range(iteration):
             batch = random_sample(train_data, batch_size)
             # print progress
-            if accuracy:
+            if accuracy is not None:
                 if i % 100 == 0:
                     train_accuracy = CNNTrainer.evaluate(
                         sess,
