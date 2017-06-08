@@ -164,14 +164,8 @@ class CNNTrainer(object):
         _offset, _length = 1, 1
         delimiter, = argv[_offset:_offset + _length]
         _offset, _length = _offset + _length, 4
-        train_data_x, train_data_y, test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
-                                                                   argv[_offset:_offset + _length])
-        train_data = np.column_stack((train_data_x, train_data_y,))
-        del train_data_x
-        del train_data_y
-        test_data = np.column_stack((test_data_x, test_data_y,))
-        del test_data_x
-        del test_data_y
+        train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path = \
+            argv[_offset:_offset + _length]
         _offset, _length = _offset + _length, 4
         initial_height, initial_width, initial_channels, target_class_cnt = map(int, argv[_offset:_offset + _length])
         _offset, _length = _offset + _length, 2
@@ -191,7 +185,14 @@ class CNNTrainer(object):
         )
 
         with tf.Session() as sess:
-            # Train
+            # load data
+            train_data_x, train_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                             (train_data_x_file_path, train_data_y_file_path,))
+            train_data = np.column_stack((train_data_x, train_data_y,))
+            del train_data_x
+            del train_data_y
+
+            # train
             logging.info("start to train cnn.")
             start_time = time.time()
             CNNTrainer.train(
@@ -201,14 +202,23 @@ class CNNTrainer(object):
                 train_data, target_class_cnt,
                 x, y_, keep_prob,
             )
+            del train_data
             end_time = time.time()
             logging.info("end to train cnn.")
             logging.info('cost time: %.2fs' % (end_time - start_time))
+
             # dump model
             model_dir_path = CNNTrainer.dump(sess, model_file_path)
             logging.info("dump model into dir: %s" % model_dir_path)
 
         with tf.Session() as sess:
+            # load data
+            test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                           (test_data_x_file_path, test_data_y_file_path,))
+            test_data = np.column_stack((test_data_x, test_data_y,))
+            del test_data_x
+            del test_data_y
+
             # load model
             graph = CNNTrainer.load(sess, model_file_path)
             x = graph.get_tensor_by_name("x:0")
@@ -221,6 +231,7 @@ class CNNTrainer(object):
                 test_data, target_class_cnt,
                 x, y_, keep_prob,
             )
+            del test_data
             logging.info("test accuracy %g" % train_accuracy)
 
     @staticmethod
