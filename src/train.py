@@ -193,7 +193,7 @@ class CNNTrainer(object):
             del train_data_y
 
             # train
-            logging.info("start to train cnn.")
+            logging.info("start to train.")
             start_time = time.time()
             CNNTrainer.train(
                 sess,
@@ -204,7 +204,7 @@ class CNNTrainer(object):
             )
             del train_data
             end_time = time.time()
-            logging.info("end to train cnn.")
+            logging.info("end to train.")
             logging.info('cost time: %.2fs' % (end_time - start_time))
 
             # dump model
