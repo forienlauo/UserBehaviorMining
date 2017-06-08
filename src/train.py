@@ -274,13 +274,14 @@ class CNNTrainer(object):
         for i in range(iteration):
             batch = random_sample(train_data, batch_size)
             # print progress
-            if i % 100 == 0:
-                train_accuracy = CNNTrainer.evaluate(
-                    sess,
-                    accuracy,
-                    batch, target_class_cnt,
-                    x, y_, keep_prob,
-                )
-                logging.info("step %d, training accuracy %g" % (i, train_accuracy))
+            if accuracy:
+                if i % 100 == 0:
+                    train_accuracy = CNNTrainer.evaluate(
+                        sess,
+                        accuracy,
+                        batch, target_class_cnt,
+                        x, y_, keep_prob,
+                    )
+                    logging.info("step %d, training accuracy %g" % (i, train_accuracy))
             _X, _Y = CNNTrainer.__format_inputs(batch, target_class_cnt, )
             train_per_step.run(feed_dict={x: _X, y_: _Y, keep_prob: CNNTrainer.KEEP_PROB}, session=sess)
