@@ -186,11 +186,16 @@ class CNNTrainer(object):
 
         with tf.Session() as sess:
             # load data
+            logging.info("start to load data.")
+            start_time = time.time()
             train_data_x, train_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
                                              (train_data_x_file_path, train_data_y_file_path,))
             train_data = np.column_stack((train_data_x, train_data_y,))
             del train_data_x
             del train_data_y
+            end_time = time.time()
+            logging.info("end to load data.")
+            logging.info('cost time: %.2fs' % (end_time - start_time))
 
             # train
             logging.info("start to train.")
@@ -208,23 +213,32 @@ class CNNTrainer(object):
             logging.info('cost time: %.2fs' % (end_time - start_time))
 
             # dump model
-            model_dir_path = CNNTrainer.dump(sess, model_file_path)
-            logging.info("dump model into dir: %s" % model_dir_path)
+            CNNTrainer.dump(sess, model_file_path)
+            logging.info("dump model into: %s" % model_file_path)
 
         with tf.Session() as sess:
             # load data
+            logging.info("start to load data.")
+            start_time = time.time()
             test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
                                            (test_data_x_file_path, test_data_y_file_path,))
             test_data = np.column_stack((test_data_x, test_data_y,))
             del test_data_x
             del test_data_y
+            end_time = time.time()
+            logging.info("end to load data.")
+            logging.info('cost time: %.2fs' % (end_time - start_time))
 
             # load model
             graph = CNNTrainer.load(sess, model_file_path)
             x = graph.get_tensor_by_name("x:0")
             y_ = graph.get_tensor_by_name("y_:0")
             keep_prob = graph.get_tensor_by_name("keep_prob:0")
+            logging.info("load model from: %s" % model_file_path)
+
             # evaluate
+            logging.info("start to train.")
+            start_time = time.time()
             train_accuracy = CNNTrainer.evaluate(
                 sess,
                 accuracy,
@@ -232,6 +246,9 @@ class CNNTrainer(object):
                 x, y_, keep_prob,
             )
             del test_data
+            end_time = time.time()
+            logging.info("end to evaluate.")
+            logging.info('cost time: %.2fs' % (end_time - start_time))
             logging.info("test accuracy %g" % train_accuracy)
 
     @staticmethod
