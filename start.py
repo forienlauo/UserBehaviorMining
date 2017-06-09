@@ -6,9 +6,9 @@ from src.train import CNNTrainer
 from src.util.example_utils import ExampleAllocator
 
 if __name__ == '__main__':
-    generatedDataFilePaths = ('resource/little_data/data_x.txt', 'resource/little_data/data_y.txt',)
-    trainDataFilePaths = ('resource/little_data/train_data_x.txt', 'resource/little_data/train_data_y.txt',)
-    testDataFilePaths = ('resource/little_data/test_data_x.txt', 'resource/little_data/test_data_y.txt',)
+    generatedDataFilePaths = ('resource/little_data/data/data_x.txt', 'resource/little_data/data/data_y.txt',)
+    trainDataFilePaths = ('resource/little_data/data/train_data_x.txt', 'resource/little_data/data/train_data_y.txt',)
+    testDataFilePaths = ('resource/little_data/data/test_data_x.txt', 'resource/little_data/data/test_data_y.txt',)
     sys.argv.extend([
         # cnn argv
         # # test
@@ -25,6 +25,7 @@ if __name__ == '__main__':
         60, 36, 1, 2,
         1000, 20,
         'resource/little_data/model/cnn.model',
+        2,
     ])
     argv = map(lambda x: str(x), sys.argv)
 
