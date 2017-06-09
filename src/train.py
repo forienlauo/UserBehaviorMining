@@ -17,7 +17,7 @@ class CNNTrainer(object):
     POOL_STRIDES_H, POOL_STRIDES_W = 2, 2
     POOL_SHAPE = [1, 2, 2, 1]
 
-    KEEP_PROB = 0.5
+    KEEP_PROB = 0.4
 
     @staticmethod
     def dump(sess, model_file_path, ):
@@ -139,7 +139,7 @@ class CNNTrainer(object):
         # Train definition
         cross_entropy = tf.reduce_mean(
             tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv), name='cross_entropy', )
-        train_per_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy, name='train_per_step', )
+        train_per_step = tf.train.AdamOptimizer(1e-5).minimize(cross_entropy, name='train_per_step', )
 
         # Evaluate definition
         correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1), name='correct_prediction', )
@@ -164,14 +164,8 @@ class CNNTrainer(object):
         _offset, _length = 1, 1
         delimiter, = argv[_offset:_offset + _length]
         _offset, _length = _offset + _length, 4
-        train_data_x, train_data_y, test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
-                                                                   argv[_offset:_offset + _length])
-        train_data = np.column_stack((train_data_x, train_data_y,))
-        del train_data_x
-        del train_data_y
-        test_data = np.column_stack((test_data_x, test_data_y,))
-        del test_data_x
-        del test_data_y
+        train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path = \
+            argv[_offset:_offset + _length]
         _offset, _length = _offset + _length, 4
         initial_height, initial_width, initial_channels, target_class_cnt = map(int, argv[_offset:_offset + _length])
         _offset, _length = _offset + _length, 2
@@ -190,69 +184,125 @@ class CNNTrainer(object):
             x, y_, keep_prob,
         )
 
-        with tf.Session() as sess:
-            # Train
-            logging.info("start to train cnn.")
+        cpu_core_num = 22
+        config = tf.ConfigProto(device_count={"CPU": cpu_core_num},  # limit to num_cpu_core CPU usage
+                                inter_op_parallelism_threads=cpu_core_num * 2,
+                                intra_op_parallelism_threads=cpu_core_num * 2,
+                                log_device_placement=True)
+
+        with tf.Session(config=config) as sess:
+            # load data
+            logging.info("start to load data.")
+            start_time = time.time()
+            if os.path.exists("./resource/little_data/train_data.npy"):
+                train_data = np.load("./resource/little_data/train_data.npy")
+                test_data = np.load("./resource/little_data/test_data.npy")
+            else:
+                train_data_x, train_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                                 (train_data_x_file_path, train_data_y_file_path,))
+                train_data = np.column_stack((train_data_x, train_data_y,))
+                del train_data_x
+                del train_data_y
+                np.save("train_data.npy", train_data)
+
+                test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                                 (test_data_x_file_path, test_data_y_file_path,))
+                test_data = np.column_stack((test_data_x, test_data_y,))
+                del test_data_x
+                del test_data_y
+                np.save("test_data.npy", test_data)
+
+            end_time = time.time()
+            logging.info("end to load data.")
+            logging.info('cost time: %.2fs' % (end_time - start_time))
+
+            # train
+            logging.info("start to train.")
             start_time = time.time()
             CNNTrainer.train(
                 sess,
                 train_per_step, accuracy,
                 iteration, batch_size,
-                train_data, target_class_cnt,
+                train_data, test_data, target_class_cnt,
                 x, y_, keep_prob,
             )
+            del train_data
             end_time = time.time()
-            logging.info("end to train cnn.")
+            logging.info("end to train.")
             logging.info('cost time: %.2fs' % (end_time - start_time))
-            # dump model
-            model_dir_path = CNNTrainer.dump(sess, model_file_path)
-            logging.info("dump model into dir: %s" % model_dir_path)
 
-        with tf.Session() as sess:
+            # dump model
+            CNNTrainer.dump(sess, model_file_path)
+            logging.info("dump model into: %s" % model_file_path)
+
+        with tf.Session(config=config) as sess:
             # load model
             graph = CNNTrainer.load(sess, model_file_path)
             x = graph.get_tensor_by_name("x:0")
             y_ = graph.get_tensor_by_name("y_:0")
             keep_prob = graph.get_tensor_by_name("keep_prob:0")
+            logging.info("load model from: %s" % model_file_path)
+
             # evaluate
-            train_accuracy = CNNTrainer.evaluate(
-                sess,
-                accuracy,
-                test_data, target_class_cnt,
-                x, y_, keep_prob,
-            )
-            logging.info("test accuracy %g" % train_accuracy)
+            logging.info("start to train.")
+            start_time = time.time()
+            iteration_test = int(len(test_data)/batch_size) + 1
+            final_accuracy = 0
+            for i in range(iteration_test):
+                batch_test = random_sample(test_data, batch_size)
+                final_accuracy += CNNTrainer.evaluate(
+                	sess,
+                	accuracy,
+                	batch_test, target_class_cnt,
+               		 x, y_, keep_prob,
+            	)
+            end_time = time.time()
+            logging.info("end to evaluate.")
+            logging.info('cost time: %.2fs' % (end_time - start_time))
+            logging.info('total data: %d' % (len(test_data)))
+            logging.info("final test accuracy %g" % (final_accuracy/iteration_test))
 
     @staticmethod
     def evaluate(
             sess,
             accuracy,
-            test_data, target_class_cnt,
+            data, target_class_cnt,
             x, y_, keep_prob,
     ):
-        _X, _Y = CNNTrainer.__format_inputs(test_data, target_class_cnt, )
-        train_accuracy = accuracy.eval(feed_dict={x: _X, y_: _Y, keep_prob: 1.0}, session=sess)
-        return train_accuracy
+            _X, _Y = CNNTrainer.__format_inputs(data, target_class_cnt, )
+            test_accuracy = accuracy.eval(feed_dict={x: _X, y_: _Y, keep_prob: 1.0}, session=sess)
+            return test_accuracy
 
     @staticmethod
     def train(
             sess,
             train_per_step, accuracy=None,
             iteration=None, batch_size=None,
-            train_data=None, target_class_cnt=None,
+            train_data=None, test_data=None, target_class_cnt=None,
             x=None, y_=None, keep_prob=None,
     ):
         sess.run(tf.global_variables_initializer())
+        np.random.shuffle(train_data)
+        np.random.shuffle(test_data)
         for i in range(iteration):
-            batch = random_sample(train_data, batch_size)
+            batch_train = random_sample(train_data, batch_size)
+            batch_test = random_sample(test_data, 2 * batch_size)
             # print progress
-            if i % 100 == 0:
-                train_accuracy = CNNTrainer.evaluate(
-                    sess,
-                    accuracy,
-                    batch, target_class_cnt,
-                    x, y_, keep_prob,
-                )
-                logging.info("step %d, training accuracy %g" % (i, train_accuracy))
-            _X, _Y = CNNTrainer.__format_inputs(batch, target_class_cnt, )
+            if accuracy is not None:
+                if i % 100 == 0:
+                    train_accuracy = CNNTrainer.evaluate(
+                        sess,
+                        accuracy,
+                        batch_train, target_class_cnt,
+                        x, y_, keep_prob,
+                    )
+                    test_accuracy = CNNTrainer.evaluate(
+                        sess,
+                        accuracy,
+                        batch_test, target_class_cnt,
+                        x, y_, keep_prob,
+                    )
+                    logging.info("step %d, training accuracy %g, testing accuracy %g" % (i, train_accuracy, test_accuracy))
+            if test_accuracy > 0.83 and train_accuracy > 0.83:  return
+            _X, _Y = CNNTrainer.__format_inputs(batch_train, target_class_cnt, )
             train_per_step.run(feed_dict={x: _X, y_: _Y, keep_prob: CNNTrainer.KEEP_PROB}, session=sess)
