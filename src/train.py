@@ -195,6 +195,12 @@ class CNNTrainer(object):
             x, y_, keep_prob,
         )
 
+        # load data
+        train_data, test_data = CNNTrainer.load_data(
+            train_data_x_file_path, train_data_y_file_path,
+            test_data_x_file_path, test_data_y_file_path,
+        )
+
         config = tf.ConfigProto(
             device_count={"CPU": cpu_core_num},
             inter_op_parallelism_threads=cpu_core_num,
@@ -202,31 +208,6 @@ class CNNTrainer(object):
         )
 
         with tf.Session(config=config) as sess:
-            # load data
-            logging.info("start to load data.")
-            start_time = time.time()
-            if os.path.exists("./resource/little_data/train_data.npy"):
-                train_data = np.load("./resource/little_data/train_data.npy")
-                test_data = np.load("./resource/little_data/test_data.npy")
-            else:
-                train_data_x, train_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
-                                                 (train_data_x_file_path, train_data_y_file_path,))
-                train_data = np.column_stack((train_data_x, train_data_y,))
-                del train_data_x
-                del train_data_y
-                np.save("./resource/little_data/train_data.npy", train_data)
-
-                test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
-                                               (test_data_x_file_path, test_data_y_file_path,))
-                test_data = np.column_stack((test_data_x, test_data_y,))
-                del test_data_x
-                del test_data_y
-                np.save("./resource/little_data/test_data.npy", test_data)
-
-            end_time = time.time()
-            logging.info("end to load data.")
-            logging.info('cost time: %.2fs' % (end_time - start_time))
-
             # train
             logging.info("start to train.")
             start_time = time.time()
@@ -267,12 +248,42 @@ class CNNTrainer(object):
                     batch_test, target_class_cnt,
                     x, y_, keep_prob,
                 )
+            del test_data
             final_accuracy = tmp_sum_accuracy / iteration_test
             end_time = time.time()
             logging.info("end to evaluate.")
             logging.info('cost time: %.2fs' % (end_time - start_time,))
             logging.info('total data: %d' % (len(test_data),))
             logging.info("final test accuracy %g" % (final_accuracy,))
+
+    @staticmethod
+    def load_data(train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path):
+        basedir_path = os.path.dirname(train_data_x_file_path)
+        train_data_cache = os.path.join(basedir_path, 'train_data.npy')
+        test_data_cache = os.path.join(basedir_path, 'test_data.npy')
+        logging.info("start to load data.")
+        start_time = time.time()
+        if os.path.exists(train_data_cache):
+            train_data = np.load(train_data_cache)
+            test_data = np.load(test_data_cache)
+        else:
+            train_data_x, train_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                             (train_data_x_file_path, train_data_y_file_path,))
+            train_data = np.column_stack((train_data_x, train_data_y,))
+            del train_data_x
+            del train_data_y
+            np.save(train_data_cache, train_data)
+
+            test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                           (test_data_x_file_path, test_data_y_file_path,))
+            test_data = np.column_stack((test_data_x, test_data_y,))
+            del test_data_x
+            del test_data_y
+            np.save(test_data_cache, test_data)
+        end_time = time.time()
+        logging.info("end to load data.")
+        logging.info('cost time: %.2fs' % (end_time - start_time))
+        return train_data, test_data
 
     @staticmethod
     def evaluate(
