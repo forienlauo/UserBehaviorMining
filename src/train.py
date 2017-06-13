@@ -236,8 +236,6 @@ class CNNTrainer(object):
             x=None, y_=None, keep_prob=None,
     ):
         sess.run(tf.global_variables_initializer())
-        np.random.shuffle(train_data)
-        np.random.shuffle(test_data)
         for i in range(iteration):
             batch_train = random_sample(train_data, batch_size)
             batch_test = random_sample(test_data, 2 * batch_size)
