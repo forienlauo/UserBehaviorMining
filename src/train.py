@@ -21,33 +21,112 @@ class CNNTrainer(object):
     KEEP_PROB = 0.4
 
     @staticmethod
-    def dump(sess, model_file_path, ):
-        """保存一个sess中的全部变量
-        实际并不存在文件路径 model_file_path, dirname(model_file_path) 作为保存的目录, basename(model_file_path) 作为模型的名字
-        @:return 模型保存保存的目录,即 dirname(model_file_path)
+    def fit(argv):
+        """支持训练并评估 baseline 级别的输入为任意<height, width, in_channels, target_class_cnt> 的 cnn 模型
+        cnn的样本格式: 每行样本是一张拉成1维的图片(height*weight*in_channels), 外加 one_hot形式的标签(长度为 target_class_cnt )
+            即,每行共有 height*weight*in_channels + target_class_cnt 列
+        @:param argv list,
+                    argv[0]: 启动文件名;
+                    argv[1:13]为必选项, <
+                        delimiter,
+                        train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path,
+                        initial_height, initial_width, initial_channels, target_class_cnt,
+                        iteration, batch_size,
+                        model_file_path,
+                    >;
+                    argv[13:]为可选项, [
+                        cpu_core_num,
+                    ]
         """
-        saver = tf.train.Saver()
-        saver.save(sess, model_file_path)
+        # argv
+        _offset, _length = 1, 1
+        delimiter, = argv[_offset:_offset + _length]
+        _offset, _length = _offset + _length, 4
+        train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path = \
+            argv[_offset:_offset + _length]
+        _offset, _length = _offset + _length, 4
+        initial_height, initial_width, initial_channels, target_class_cnt = map(int, argv[_offset:_offset + _length])
+        _offset, _length = _offset + _length, 2
+        iteration, batch_size = map(int, argv[_offset:_offset + _length])
+        _offset, _length = _offset + _length, 1
+        model_file_path, = argv[_offset:_offset + _length]
+        # optional
+        _offset, _length = _offset + _length, 1
+        cpu_core_num = conf.CPU_COUNT
+        if len(argv) > _offset:
+            cpu_core_num, = map(int, argv[_offset:_offset + _length])
 
-        model_dir = os.path.dirname(model_file_path)
-        return model_dir
+        # Construct
+        # input and labels
+        x = tf.placeholder(tf.float32, shape=[None, initial_height * initial_width], name='x', )
+        y_ = tf.placeholder(tf.float32, shape=[None, target_class_cnt], name="y_", )
+        keep_prob = tf.placeholder(tf.float32, name='keep_prob', )
+        # trainer and evaluator
+        train_per_step, accuracy = CNNTrainer.construct(
+            initial_height, initial_width, initial_channels, target_class_cnt,
+            x, y_, keep_prob,
+        )
 
-    @staticmethod
-    def load(sess, model_file_path, ):
-        """加载一个sess中的全部变量
-        实际并不存在文件路径 model_file_path, dirname(model_file_path) 作为保存的目录, basename(model_file_path) 作为模型的名字
-        @:return sess中的 gragh, 可以通过 graph 取得所有 tensor 和 operation
-        """
-        meta_gragh_path = '%s.meta' % (model_file_path,)
-        saver = tf.train.import_meta_graph(meta_gragh_path)
-        saver.restore(sess, tf.train.latest_checkpoint(os.path.dirname(model_file_path)))
+        # load data
+        train_data, test_data = CNNTrainer.load_data(
+            train_data_x_file_path, train_data_y_file_path,
+            test_data_x_file_path, test_data_y_file_path,
+        )
 
-        return tf.get_default_graph()
+        config = tf.ConfigProto(
+            device_count={"CPU": cpu_core_num},
+            inter_op_parallelism_threads=cpu_core_num,
+            intra_op_parallelism_threads=cpu_core_num,
+        )
 
-    @staticmethod
-    def __format_inputs(example, target_class_cnt):
-        example = np.array(example)
-        return example[:, :-target_class_cnt], example[:, -target_class_cnt:]
+        with tf.Session(config=config) as sess:
+            # train
+            logging.info("start to train.")
+            start_time = time.time()
+            CNNTrainer.train(
+                sess,
+                train_per_step, accuracy,
+                iteration, batch_size,
+                train_data, test_data, target_class_cnt,
+                x, y_, keep_prob,
+            )
+            del train_data
+            end_time = time.time()
+            logging.info("end to train.")
+            logging.info('cost time: %.2fs' % (end_time - start_time))
+
+            # dump model
+            CNNTrainer.dump_model(sess, model_file_path)
+            logging.info("dump model into: %s" % model_file_path)
+
+        with tf.Session(config=config) as sess:
+            # load model
+            graph = CNNTrainer.load_model(sess, model_file_path)
+            x = graph.get_tensor_by_name("x:0")
+            y_ = graph.get_tensor_by_name("y_:0")
+            keep_prob = graph.get_tensor_by_name("keep_prob:0")
+            logging.info("load model from: %s" % model_file_path)
+
+            # evaluate
+            logging.info("start to train.")
+            start_time = time.time()
+            iteration_test = int(len(test_data) / batch_size) + 1
+            tmp_sum_accuracy = 0
+            for i in range(iteration_test):
+                batch_test = random_sample(test_data, batch_size)
+                tmp_sum_accuracy += CNNTrainer.evaluate(
+                    sess,
+                    accuracy,
+                    batch_test, target_class_cnt,
+                    x, y_, keep_prob,
+                )
+            del test_data
+            final_accuracy = tmp_sum_accuracy / iteration_test
+            end_time = time.time()
+            logging.info("end to evaluate.")
+            logging.info('cost time: %.2fs' % (end_time - start_time,))
+            logging.info('total data: %d' % (len(test_data),))
+            logging.info("final test accuracy %g" % (final_accuracy,))
 
     @staticmethod
     def construct(
@@ -149,154 +228,6 @@ class CNNTrainer(object):
         return train_per_step, accuracy
 
     @staticmethod
-    def fit(argv):
-        """支持训练并评估 baseline 级别的输入为任意<height, width, in_channels, target_class_cnt> 的 cnn 模型
-        cnn的样本格式: 每行样本是一张拉成1维的图片(height*weight*in_channels), 外加 one_hot形式的标签(长度为 target_class_cnt )
-            即,每行共有 height*weight*in_channels + target_class_cnt 列
-        @:param argv list,
-                    argv[0]: 启动文件名;
-                    argv[1:13]为必选项, <
-                        delimiter,
-                        train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path,
-                        initial_height, initial_width, initial_channels, target_class_cnt,
-                        iteration, batch_size,
-                        model_file_path,
-                    >;
-                    argv[13:]为可选项, [
-                        cpu_core_num,
-                    ]
-        """
-        # argv
-        _offset, _length = 1, 1
-        delimiter, = argv[_offset:_offset + _length]
-        _offset, _length = _offset + _length, 4
-        train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path = \
-            argv[_offset:_offset + _length]
-        _offset, _length = _offset + _length, 4
-        initial_height, initial_width, initial_channels, target_class_cnt = map(int, argv[_offset:_offset + _length])
-        _offset, _length = _offset + _length, 2
-        iteration, batch_size = map(int, argv[_offset:_offset + _length])
-        _offset, _length = _offset + _length, 1
-        model_file_path, = argv[_offset:_offset + _length]
-        # optional
-        _offset, _length = _offset + _length, 1
-        cpu_core_num = conf.CPU_COUNT
-        if len(argv) > _offset:
-            cpu_core_num, = map(int, argv[_offset:_offset + _length])
-
-        # Construct
-        # input and labels
-        x = tf.placeholder(tf.float32, shape=[None, initial_height * initial_width], name='x', )
-        y_ = tf.placeholder(tf.float32, shape=[None, target_class_cnt], name="y_", )
-        keep_prob = tf.placeholder(tf.float32, name='keep_prob', )
-        # trainer and evaluator
-        train_per_step, accuracy = CNNTrainer.construct(
-            initial_height, initial_width, initial_channels, target_class_cnt,
-            x, y_, keep_prob,
-        )
-
-        # load data
-        train_data, test_data = CNNTrainer.load_data(
-            train_data_x_file_path, train_data_y_file_path,
-            test_data_x_file_path, test_data_y_file_path,
-        )
-
-        config = tf.ConfigProto(
-            device_count={"CPU": cpu_core_num},
-            inter_op_parallelism_threads=cpu_core_num,
-            intra_op_parallelism_threads=cpu_core_num,
-        )
-
-        with tf.Session(config=config) as sess:
-            # train
-            logging.info("start to train.")
-            start_time = time.time()
-            CNNTrainer.train(
-                sess,
-                train_per_step, accuracy,
-                iteration, batch_size,
-                train_data, test_data, target_class_cnt,
-                x, y_, keep_prob,
-            )
-            del train_data
-            end_time = time.time()
-            logging.info("end to train.")
-            logging.info('cost time: %.2fs' % (end_time - start_time))
-
-            # dump model
-            CNNTrainer.dump(sess, model_file_path)
-            logging.info("dump model into: %s" % model_file_path)
-
-        with tf.Session(config=config) as sess:
-            # load model
-            graph = CNNTrainer.load(sess, model_file_path)
-            x = graph.get_tensor_by_name("x:0")
-            y_ = graph.get_tensor_by_name("y_:0")
-            keep_prob = graph.get_tensor_by_name("keep_prob:0")
-            logging.info("load model from: %s" % model_file_path)
-
-            # evaluate
-            logging.info("start to train.")
-            start_time = time.time()
-            iteration_test = int(len(test_data) / batch_size) + 1
-            tmp_sum_accuracy = 0
-            for i in range(iteration_test):
-                batch_test = random_sample(test_data, batch_size)
-                tmp_sum_accuracy += CNNTrainer.evaluate(
-                    sess,
-                    accuracy,
-                    batch_test, target_class_cnt,
-                    x, y_, keep_prob,
-                )
-            del test_data
-            final_accuracy = tmp_sum_accuracy / iteration_test
-            end_time = time.time()
-            logging.info("end to evaluate.")
-            logging.info('cost time: %.2fs' % (end_time - start_time,))
-            logging.info('total data: %d' % (len(test_data),))
-            logging.info("final test accuracy %g" % (final_accuracy,))
-
-    @staticmethod
-    def load_data(train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path):
-        basedir_path = os.path.dirname(train_data_x_file_path)
-        train_data_cache = os.path.join(basedir_path, 'train_data.npy')
-        test_data_cache = os.path.join(basedir_path, 'test_data.npy')
-        logging.info("start to load data.")
-        start_time = time.time()
-        if os.path.exists(train_data_cache):
-            train_data = np.load(train_data_cache)
-            test_data = np.load(test_data_cache)
-        else:
-            train_data_x, train_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
-                                             (train_data_x_file_path, train_data_y_file_path,))
-            train_data = np.column_stack((train_data_x, train_data_y,))
-            del train_data_x
-            del train_data_y
-            np.save(train_data_cache, train_data)
-
-            test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
-                                           (test_data_x_file_path, test_data_y_file_path,))
-            test_data = np.column_stack((test_data_x, test_data_y,))
-            del test_data_x
-            del test_data_y
-            np.save(test_data_cache, test_data)
-        end_time = time.time()
-        logging.info("end to load data.")
-        logging.info('cost time: %.2fs' % (end_time - start_time))
-        return train_data, test_data
-
-    @staticmethod
-    def evaluate(
-            sess,
-            accuracy,
-            data, target_class_cnt,
-            x, y_, keep_prob,
-    ):
-        _X, _Y = CNNTrainer.__format_inputs(data, target_class_cnt, )
-        test_accuracy = accuracy.eval(feed_dict={x: _X, y_: _Y, keep_prob: 1.0}, session=sess)
-        return test_accuracy
-
-    @staticmethod
     def train(
             sess,
             train_per_step, accuracy=None,
@@ -330,3 +261,72 @@ class CNNTrainer(object):
                     if test_accuracy > 0.83 and train_accuracy > 0.83:  return
             _X, _Y = CNNTrainer.__format_inputs(batch_train, target_class_cnt, )
             train_per_step.run(feed_dict={x: _X, y_: _Y, keep_prob: CNNTrainer.KEEP_PROB}, session=sess)
+
+    @staticmethod
+    def evaluate(
+            sess,
+            accuracy,
+            data, target_class_cnt,
+            x, y_, keep_prob,
+    ):
+        _X, _Y = CNNTrainer.__format_inputs(data, target_class_cnt, )
+        test_accuracy = accuracy.eval(feed_dict={x: _X, y_: _Y, keep_prob: 1.0}, session=sess)
+        return test_accuracy
+
+    @staticmethod
+    def __format_inputs(example, target_class_cnt):
+        example = np.array(example)
+        return example[:, :-target_class_cnt], example[:, -target_class_cnt:]
+
+    @staticmethod
+    def load_data(train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path):
+        basedir_path = os.path.dirname(train_data_x_file_path)
+        train_data_cache = os.path.join(basedir_path, 'train_data.npy')
+        test_data_cache = os.path.join(basedir_path, 'test_data.npy')
+        logging.info("start to load data.")
+        start_time = time.time()
+        if os.path.exists(train_data_cache):
+            train_data = np.load(train_data_cache)
+            test_data = np.load(test_data_cache)
+        else:
+            train_data_x, train_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                             (train_data_x_file_path, train_data_y_file_path,))
+            train_data = np.column_stack((train_data_x, train_data_y,))
+            del train_data_x
+            del train_data_y
+            np.save(train_data_cache, train_data)
+
+            test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                           (test_data_x_file_path, test_data_y_file_path,))
+            test_data = np.column_stack((test_data_x, test_data_y,))
+            del test_data_x
+            del test_data_y
+            np.save(test_data_cache, test_data)
+        end_time = time.time()
+        logging.info("end to load data.")
+        logging.info('cost time: %.2fs' % (end_time - start_time))
+        return train_data, test_data
+
+    @staticmethod
+    def dump_model(sess, model_file_path, ):
+        """保存一个sess中的全部变量
+        实际并不存在文件路径 model_file_path, dirname(model_file_path) 作为保存的目录, basename(model_file_path) 作为模型的名字
+        @:return 模型保存保存的目录,即 dirname(model_file_path)
+        """
+        saver = tf.train.Saver()
+        saver.save(sess, model_file_path)
+
+        model_dir = os.path.dirname(model_file_path)
+        return model_dir
+
+    @staticmethod
+    def load_model(sess, model_file_path, ):
+        """加载一个sess中的全部变量
+        实际并不存在文件路径 model_file_path, dirname(model_file_path) 作为保存的目录, basename(model_file_path) 作为模型的名字
+        @:return sess中的 gragh, 可以通过 graph 取得所有 tensor 和 operation
+        """
+        meta_gragh_path = '%s.meta' % (model_file_path,)
+        saver = tf.train.import_meta_graph(meta_gragh_path)
+        saver.restore(sess, tf.train.latest_checkpoint(os.path.dirname(model_file_path)))
+
+        return tf.get_default_graph()
