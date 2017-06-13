@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 import sys
+
 sys.path.append('../../')
 
 import pandas as pd
@@ -8,7 +9,6 @@ import numpy as np
 import pickle
 import os
 import conf
-
 
 SEPARATOR = '|'
 FEATURE_NUM = 11
@@ -86,7 +86,8 @@ def __makepath(basename, clude_type):
     :param clude_type:    数据类型(干净的数据、 滤掉的数据)
     :return:
     """
-    return os.path.join(conf.ROOT_DIR, "resource/filtered/%s" %(clude_type), basename)
+    return os.path.join(conf.ROOT_DIR, "resource/filtered/%s" % (clude_type), basename)
+
 
 def partition_hash(line):
     '''
@@ -96,9 +97,10 @@ def partition_hash(line):
     '''
     line = line.strip()
     from_num = [feature.strip() for feature in line.split(SEPARATOR)][0]
-    if(len(from_num) == 0):
+    if (len(from_num) == 0):
         return
     return int(from_num[-3:], 16) % PARTITION_COUNT
+
 
 def check_data_line(line):
     # configuration
@@ -134,7 +136,7 @@ def check_data_line(line):
     type = row[columns_dict['type'][0]]
     if not len(type) > 0:
         return False
-    if type == 'local' or type == 'distance':   #如果通话类型为本地、外地固话，则可能没有后面的数据
+    if type == 'local' or type == 'distance':  # 如果通话类型为本地、外地固话，则可能没有后面的数据
         return True
 
     call_type = row[columns_dict['call_type'][0]]
@@ -156,8 +158,6 @@ def check_data_line(line):
     return True
 
 
-
 if __name__ == '__main__':
-
     partitionProcess('../../resource/raw/fraud_user', 'fraud_user')
     partitionProcess('../../resource/raw/normal_user', 'normal_user')

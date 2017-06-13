@@ -1,8 +1,8 @@
 # coding=utf-8
-import json
-import os
-import logging
 import datetime
+import json
+import logging
+import os
 import sys
 from multiprocessing import cpu_count
 
@@ -11,7 +11,7 @@ __LOG_LEVEL = (logging.INFO, logging.ERROR, logging.DEBUG)[-1]
 
 __LOG_FORMAT = '%(levelname)5s %(asctime)s [%(filename)s line:%(lineno)d] %(message)s'
 
-__LOG_FILE_DIR = 'log/%s.log' %(datetime.datetime.now().strftime('%Y%m%d%H%M'))
+__LOG_FILE_DIR = 'log/%s.log' % (datetime.datetime.now().strftime('%Y%m%d%H%M'))
 logging.basicConfig(format=__LOG_FORMAT, level=__LOG_LEVEL, filename=__LOG_FILE_DIR)
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'

@@ -23,7 +23,7 @@ if __name__ == '__main__':
         trainDataFilePaths[0], trainDataFilePaths[1],
         testDataFilePaths[0], testDataFilePaths[1],
         60, 36, 1, 2,
-        100, 20,
+        1000, 20,
         'resource/little_data/model/cnn.model',
         2,
     ])
