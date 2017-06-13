@@ -163,7 +163,7 @@ class CNNTrainer(object):
                         model_file_path,
                     >;
                     argv[13:]为可选项, [
-                        cpu_count,
+                        cpu_core_num,
                     ]
         """
         # argv
@@ -181,9 +181,9 @@ class CNNTrainer(object):
         model_file_path, = argv[_offset:_offset + _length]
         # optional
         _offset, _length = _offset + _length, 1
-        cpu_count = conf.CPU_COUNT
+        cpu_core_num = conf.CPU_COUNT
         if len(argv) > _offset:
-            cpu_count, = map(int, argv[_offset:_offset + _length])
+            cpu_core_num, = map(int, argv[_offset:_offset + _length])
 
         # Construct
         # input and labels
@@ -197,9 +197,9 @@ class CNNTrainer(object):
         )
 
         config = tf.ConfigProto(
-            device_count={"CPU": cpu_count},
-            inter_op_parallelism_threads=cpu_count,
-            intra_op_parallelism_threads=cpu_count,
+            device_count={"CPU": cpu_core_num},
+            inter_op_parallelism_threads=cpu_core_num,
+            intra_op_parallelism_threads=cpu_core_num,
         )
 
         with tf.Session(config=config) as sess:
