@@ -121,12 +121,13 @@ class CNNTrainer(object):
                     batch_test, target_class_cnt,
                     x, y_, keep_prob,
                 )
+            test_data_len = len(test_data)
             del test_data
             final_accuracy = tmp_sum_accuracy / iteration_test
             end_time = time.time()
             logging.info("end to evaluate.")
             logging.info('cost time: %.2fs' % (end_time - start_time,))
-            logging.info('total data: %d' % (len(test_data),))
+            logging.info('total data: %d' % (test_data_len,))
             logging.info("final test accuracy %g" % (final_accuracy,))
 
     @staticmethod
