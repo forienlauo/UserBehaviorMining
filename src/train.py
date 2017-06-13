@@ -71,6 +71,7 @@ class CNNTrainer(object):
         train_data, test_data = CNNTrainer.load_data(
             train_data_x_file_path, train_data_y_file_path,
             test_data_x_file_path, test_data_y_file_path,
+            delimiter,
         )
 
         config = tf.ConfigProto(
@@ -277,7 +278,11 @@ class CNNTrainer(object):
         return example[:, :-target_class_cnt], example[:, -target_class_cnt:]
 
     @staticmethod
-    def load_data(train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path):
+    def load_data(
+            train_data_x_file_path, train_data_y_file_path,
+            test_data_x_file_path, test_data_y_file_path,
+            delimiter,
+    ):
         basedir_path = os.path.dirname(train_data_x_file_path)
         train_data_cache = os.path.join(basedir_path, 'train_data.npy')
         test_data_cache = os.path.join(basedir_path, 'test_data.npy')
