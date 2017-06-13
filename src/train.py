@@ -258,20 +258,21 @@ class CNNTrainer(object):
             logging.info("start to train.")
             start_time = time.time()
             iteration_test = int(len(test_data) / batch_size) + 1
-            final_accuracy = 0
+            tmp_sum_accuracy = 0
             for i in range(iteration_test):
                 batch_test = random_sample(test_data, batch_size)
-                final_accuracy += CNNTrainer.evaluate(
+                tmp_sum_accuracy += CNNTrainer.evaluate(
                     sess,
                     accuracy,
                     batch_test, target_class_cnt,
                     x, y_, keep_prob,
                 )
+            final_accuracy = tmp_sum_accuracy / iteration_test
             end_time = time.time()
             logging.info("end to evaluate.")
-            logging.info('cost time: %.2fs' % (end_time - start_time))
-            logging.info('total data: %d' % (len(test_data)))
-            logging.info("final test accuracy %g" % (final_accuracy / iteration_test))
+            logging.info('cost time: %.2fs' % (end_time - start_time,))
+            logging.info('total data: %d' % (len(test_data),))
+            logging.info("final test accuracy %g" % (final_accuracy,))
 
     @staticmethod
     def evaluate(
@@ -315,6 +316,6 @@ class CNNTrainer(object):
                     )
                     logging.info(
                         "step %d, training accuracy %g, testing accuracy %g" % (i, train_accuracy, test_accuracy))
-            if test_accuracy > 0.83 and train_accuracy > 0.83:  return
+                    if test_accuracy > 0.83 and train_accuracy > 0.83:  return
             _X, _Y = CNNTrainer.__format_inputs(batch_train, target_class_cnt, )
             train_per_step.run(feed_dict={x: _X, y_: _Y, keep_prob: CNNTrainer.KEEP_PROB}, session=sess)
