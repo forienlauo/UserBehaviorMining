@@ -43,8 +43,6 @@ class UserBehaviorFeatures():
                 feature_dict[key] = pd.concat(feature, axis=1)
             train_x, train_y = self.after_merge(feature_dict, data_type)
 
-            np.save(self.dump_path + basename + '_train_x', train_x)
-            np.save(self.dump_path + basename + '_train_y', train_y)
             print("extracing finished")
         train_x = pd.DataFrame(train_x.reshape(-1, 60*36))
         train_y = pd.DataFrame(train_y.reshape(-1, 2))
@@ -147,7 +145,6 @@ class UserBehaviorFeatures():
             # 对列归一化
             data_arr = min_max_scaler.fit_transform(dataframe)
 
-            # train_x_list.append(data_arr)
             train_x_list.append(misc.imresize(data_arr, (60, 36)))  # 图片转成64X64
 
         train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(pic_num, 60, 36)
@@ -199,7 +196,7 @@ class UserBehaviorFeatures():
 if __name__ == '__main__':
 
     users = UserBehaviorFeatures()
-    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/fraud_user_19.txt', 'fraud_user')
-    train_x, train_y = users.extrace_and_process('../../resource/filtered/include/normal_user_19.txt', 'normal_user')
+    train_x, train_y = users.extrace_and_process('../../resource/little_data/filtered/include/fraud_user_0_sample.txt', 'fraud_user')
+    train_x, train_y = users.extrace_and_process('../../resource/little_data/filtered/include/normal_user_19.txt', 'normal_user')
 
 
