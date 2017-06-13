@@ -203,14 +203,14 @@ class CNNTrainer(object):
                 train_data = np.column_stack((train_data_x, train_data_y,))
                 del train_data_x
                 del train_data_y
-                np.save("train_data.npy", train_data)
+                np.save("./resource/little_data/train_data.npy", train_data)
 
                 test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
                                                  (test_data_x_file_path, test_data_y_file_path,))
                 test_data = np.column_stack((test_data_x, test_data_y,))
                 del test_data_x
                 del test_data_y
-                np.save("test_data.npy", test_data)
+                np.save("./resource/little_data/test_data.npy", test_data)
 
             end_time = time.time()
             logging.info("end to load data.")
