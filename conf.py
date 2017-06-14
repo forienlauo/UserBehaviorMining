@@ -23,7 +23,7 @@ CPU_COUNT = cpu_count()
 
 class CDRDataDict(object):
     DEFAULT_SEPARATOR = '|'
-    __DEFAULT_FEATURE_IDX_FILE_PATH = os.path.join(ROOT_DIR, 'resource/original_data/cdr-feature_dict.json')
+    DEFAULT_FEATURE_IDX_FILE_PATH = os.path.join(ROOT_DIR, 'resource/original_data/cdr-feature_dict.json')
 
     # enum
     COMMUNICATION_TYPE_ENUMS = {
@@ -39,10 +39,11 @@ class CDRDataDict(object):
     __feature_idxs = dict()
 
     @staticmethod
-    def init():
-        with open(CDRDataDict.__DEFAULT_FEATURE_IDX_FILE_PATH) as default_feature_idx_file:
-            default_feature_idx = json.loads(default_feature_idx_file.read())
-            CDRDataDict.reset_feature_idxs_by_user(default_feature_idx)
+    def init(default_feature_idx_file_path=None):
+        if default_feature_idx_file_path:
+            with open(default_feature_idx_file_path) as default_feature_idx_file:
+                default_feature_idx = json.loads(default_feature_idx_file.read())
+                CDRDataDict.reset_feature_idxs_by_user(default_feature_idx)
 
     @staticmethod
     def get_feature_num():
