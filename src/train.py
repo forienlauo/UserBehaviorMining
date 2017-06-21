@@ -180,6 +180,7 @@ need args:
                 in0 = x
                 x_image = tf.reshape(in0, [-1, initial_height, initial_width, initial_channels], name='x_image', )
                 out0 = x_image
+                CNNTrainer.add_image2summary(out0, 'out0')
 
             # C1
             with tf.name_scope('C1') as _:
@@ -194,6 +195,7 @@ need args:
                 h_conv1 = tf.nn.relu(conv2d(in1, W_conv1) + b_conv1, name='h_conv1', )
 
                 out1 = h_conv1
+                CNNTrainer.add_image2summary(out1, 'out1')
 
             # S2
             with tf.name_scope('S2') as _:
@@ -202,6 +204,7 @@ need args:
                 h_pool2 = max_pool(in2, CNNTrainer.POOL_SHAPE, name='h_pool2', )
 
                 out2 = h_pool2
+                CNNTrainer.add_image2summary(out2, 'out2')
 
             # C3
             with tf.name_scope('C3') as _:
@@ -216,6 +219,7 @@ need args:
                 h_conv2 = tf.nn.relu(conv2d(in3, W_conv2) + b_conv2, name='h_conv2', )
 
                 out3 = h_conv2
+                CNNTrainer.add_image2summary(out3, 'out3')
 
             # S4
             with tf.name_scope('S4') as _:
@@ -224,6 +228,7 @@ need args:
                 h_pool2 = max_pool(in4, CNNTrainer.POOL_SHAPE, name='h_pool2', )
 
                 out4 = h_pool2
+                CNNTrainer.add_image2summary(out4, 'out4')
 
             # F5, Densely Connected Layer(Full Connected Layer)
             with tf.name_scope('F5') as _:
@@ -384,3 +389,11 @@ need args:
         saver.restore(sess, tf.train.latest_checkpoint(os.path.dirname(model_file_path)))
 
         return tf.get_default_graph()
+
+    @staticmethod
+    def add_image2summary(x, image_name_prefix):
+        channels = x.get_shape()[3].value
+        for channel_no in range(channels):
+            image = x[:, :, :, channel_no:channel_no + 1]
+            image_name = '%s-%d' % (image_name_prefix, channel_no,)
+            tf.summary.image(image_name, image)
