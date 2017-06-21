@@ -89,11 +89,22 @@ need args:
         )
 
         # load data
-        train_data, test_data = CNNTrainer.load_data(
+        logging.info("start to load data.")
+        start_time = time.time()
+        _basedir_path = os.path.dirname(train_data_x_file_path)
+        train_data = CNNTrainer.load_data(
             train_data_x_file_path, train_data_y_file_path,
+            delimiter,
+            os.path.join(_basedir_path, 'train_data.npy'),
+        )
+        test_data = CNNTrainer.load_data(
             test_data_x_file_path, test_data_y_file_path,
             delimiter,
+            os.path.join(_basedir_path, 'test_data.npy'),
         )
+        end_time = time.time()
+        logging.info("end to load data.")
+        logging.info('cost time: %.2fs' % (end_time - start_time))
 
         config = tf.ConfigProto(
             device_count={"CPU": cpu_core_num},
@@ -121,34 +132,22 @@ need args:
             CNNTrainer.dump_model(sess, model_file_path)
             logging.info("dump model into: %s" % model_file_path)
 
-        with tf.Session(config=config) as sess:
-            # load model
-            graph = CNNTrainer.load_model(sess, model_file_path)
-            x = graph.get_tensor_by_name("x:0")
-            y_ = graph.get_tensor_by_name("y_:0")
-            keep_prob = graph.get_tensor_by_name("keep_prob:0")
-            logging.info("load model from: %s" % model_file_path)
-
             # evaluate
-            logging.info("start to train.")
+            logging.info("start to evaluate.")
             start_time = time.time()
-            iteration_test = int(len(test_data) / batch_size) + 1
-            tmp_sum_accuracy = 0
-            for i in range(iteration_test):
-                batch_test = random_sample(test_data, batch_size)
-                tmp_sum_accuracy += CNNTrainer.evaluate(
-                    sess,
-                    accuracy,
-                    batch_test, target_class_cnt,
-                    x, y_, keep_prob,
-                )
             test_data_len = len(test_data)
+            final_accuracy = CNNTrainer.evaluate(
+                sess,
+                accuracy,
+                batch_size,
+                test_data, target_class_cnt,
+                x, y_, keep_prob,
+            )
             del test_data
-            final_accuracy = tmp_sum_accuracy / iteration_test
             end_time = time.time()
             logging.info("end to evaluate.")
             logging.info('cost time: %.2fs' % (end_time - start_time,))
-            logging.info('total data: %d' % (test_data_len,))
+            logging.info('total test data: %d' % (test_data_len,))
             logging.info("final test accuracy %g" % (final_accuracy,))
 
         return 0
@@ -299,33 +298,43 @@ need args:
         sess.run(tf.global_variables_initializer())
         for i in range(iteration):
             batch_train = random_sample(train_data, batch_size)
-            batch_test = random_sample(test_data, 2 * batch_size)
+            _X_train, _Y_train = CNNTrainer.__format_inputs(batch_train, target_class_cnt, )
             # print progress
             if accuracy is not None:
                 if i % 100 == 0:
-                    train_accuracy = CNNTrainer.evaluate(
-                        sess,
-                        accuracy,
-                        batch_train, target_class_cnt,
-                        x, y_, keep_prob,
-                    )
-                    test_accuracy = CNNTrainer.evaluate(
-                        sess,
-                        accuracy,
-                        batch_test, target_class_cnt,
-                        x, y_, keep_prob,
-                    )
+                    train_accuracy = accuracy.eval(feed_dict={x: _X_train, y_: _Y_train, keep_prob: 1.0}, session=sess)
+                    batch_test = random_sample(test_data, 2 * batch_size)
+                    _X_test, _Y_test = CNNTrainer.__format_inputs(batch_test, target_class_cnt, )
+                    test_accuracy = accuracy.eval(feed_dict={x: _X_test, y_: _Y_test, keep_prob: 1.0}, session=sess)
                     logging.info(
                         "step %d, training accuracy %g, testing accuracy %g" % (i, train_accuracy, test_accuracy))
                     if test_accuracy > 0.83 and train_accuracy > 0.83:  return
-            _X, _Y = CNNTrainer.__format_inputs(batch_train, target_class_cnt, )
-            train_per_step.run(feed_dict={x: _X, y_: _Y, keep_prob: CNNTrainer.KEEP_PROB}, session=sess)
-            summaries_result = sess.run(summaries, feed_dict={x: _X, y_: _Y, keep_prob: CNNTrainer.KEEP_PROB}, )
+            feed = {x: _X_train, y_: _Y_train, keep_prob: CNNTrainer.KEEP_PROB}
+            train_per_step.run(feed_dict=feed, session=sess)
+            summaries_result = sess.run(summaries, feed_dict=feed, )
             summary_writer.add_summary(summaries_result, global_step=i)
         summary_writer.close()
 
     @staticmethod
     def evaluate(
+            sess,
+            accuracy,
+            batch_size,
+            data, target_class_cnt,
+            x, y_, keep_prob,
+
+    ):
+        iteration = int(len(data) / batch_size) + 1
+        tmp_sum_accuracy = 0
+        for i in range(iteration):
+            batch_test = random_sample(data, batch_size)
+            _X, _Y = CNNTrainer.__format_inputs(batch_test, target_class_cnt, )
+            tmp_sum_accuracy += accuracy.eval(feed_dict={x: _X, y_: _Y, keep_prob: 1.0}, session=sess)
+        final_accuracy = tmp_sum_accuracy / iteration
+        return final_accuracy
+
+    @staticmethod
+    def evaluate_one(
             sess,
             accuracy,
             data, target_class_cnt,
@@ -342,36 +351,21 @@ need args:
 
     @staticmethod
     def load_data(
-            train_data_x_file_path, train_data_y_file_path,
-            test_data_x_file_path, test_data_y_file_path,
+            data_x_file_path, data_y_file_path,
             delimiter,
+            cache=None,
     ):
-        basedir_path = os.path.dirname(train_data_x_file_path)
-        train_data_cache = os.path.join(basedir_path, 'train_data.npy')
-        test_data_cache = os.path.join(basedir_path, 'test_data.npy')
-        logging.info("start to load data.")
-        start_time = time.time()
-        if os.path.exists(train_data_cache):
-            train_data = np.load(train_data_cache)
-            test_data = np.load(test_data_cache)
+        if cache is None or not os.path.exists(cache):
+            data_x, data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
+                                 (data_x_file_path, data_y_file_path,))
+            data = np.column_stack((data_x, data_y,))
+            del data_x
+            del data_y
+            if cache is not None:
+                np.save(cache, data)
         else:
-            train_data_x, train_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
-                                             (train_data_x_file_path, train_data_y_file_path,))
-            train_data = np.column_stack((train_data_x, train_data_y,))
-            del train_data_x
-            del train_data_y
-            np.save(train_data_cache, train_data)
-
-            test_data_x, test_data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
-                                           (test_data_x_file_path, test_data_y_file_path,))
-            test_data = np.column_stack((test_data_x, test_data_y,))
-            del test_data_x
-            del test_data_y
-            np.save(test_data_cache, test_data)
-        end_time = time.time()
-        logging.info("end to load data.")
-        logging.info('cost time: %.2fs' % (end_time - start_time))
-        return train_data, test_data
+            data = np.load(cache)
+        return data
 
     @staticmethod
     def dump_model(sess, model_file_path, ):
@@ -396,6 +390,61 @@ need args:
         saver.restore(sess, tf.train.latest_checkpoint(os.path.dirname(model_file_path)))
 
         return tf.get_default_graph()
+
+    @staticmethod
+    def view_accuracy(
+            delimiter,
+            test_data_x_file_path, test_data_y_file_path,
+            target_class_cnt,
+            batch_size,
+            model_file_path,
+            cpu_core_num=conf.CPU_COUNT,
+    ):
+        # load data
+        logging.info("start to load data.")
+        start_time = time.time()
+        _basedir_path = os.path.dirname(test_data_x_file_path)
+        test_data = CNNTrainer.load_data(
+            test_data_x_file_path, test_data_y_file_path,
+            delimiter,
+            os.path.join(_basedir_path, 'test_data.npy'),
+        )
+        end_time = time.time()
+        logging.info("end to load data.")
+        logging.info('cost time: %.2fs' % (end_time - start_time))
+
+        config = tf.ConfigProto(
+            device_count={"CPU": cpu_core_num},
+            inter_op_parallelism_threads=cpu_core_num,
+            intra_op_parallelism_threads=cpu_core_num,
+        )
+
+        with tf.Session(config=config) as sess:
+            # load model
+            graph = CNNTrainer.load_model(sess, model_file_path)
+            x = graph.get_tensor_by_name("input/x:0")
+            y_ = graph.get_tensor_by_name("input/y_:0")
+            keep_prob = graph.get_tensor_by_name("input/keep_prob:0")
+            accuracy = graph.get_tensor_by_name("evaluator/accuracy:0")
+            logging.info("load model from: %s" % model_file_path)
+
+            # evaluate
+            logging.info("start to evaluate.")
+            start_time = time.time()
+            test_data_len = len(test_data)
+            final_accuracy = CNNTrainer.evaluate(
+                sess,
+                accuracy,
+                batch_size,
+                test_data, target_class_cnt,
+                x, y_, keep_prob,
+            )
+            del test_data
+            end_time = time.time()
+            logging.info("end to evaluate.")
+            logging.info('cost time: %.2fs' % (end_time - start_time,))
+            logging.info('total data: %d' % (test_data_len,))
+            logging.info("final test accuracy %g" % (final_accuracy,))
 
     @staticmethod
     def add_image2summary(x, image_name_prefix):
