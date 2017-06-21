@@ -50,7 +50,7 @@ need args:
                         cpu_core_num,
                     ]
         """
-        if len(argv[1:]) <= 13:
+        if len(argv[1:]) < 12:
             CNNTrainer.print_usage()
             return 1
 

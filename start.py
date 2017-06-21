@@ -6,7 +6,7 @@ from src.train import CNNTrainer
 from src.util.example_utils import ExampleAllocator
 
 if __name__ == '__main__':
-    if len(sys.argv) == 1:
+    if len(sys.argv) <= 1:
         generatedDataFilePaths = ('resource/little_data/data/data_x.txt',
                                   'resource/little_data/data/data_y.txt',)
         trainDataFilePaths = ('resource/little_data/data/train_data_x.txt',
