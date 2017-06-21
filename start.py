@@ -39,4 +39,6 @@ if __name__ == '__main__':
     #     generatedDataFilePaths,
     #     trainDataFilePaths=trainDataFilePaths, testDataFilePaths=testDataFilePaths,
     # ).allocate()
-    CNNTrainer.fit(argv)
+    exit_code = CNNTrainer.fit(argv)
+
+    sys.exit(exit_code)

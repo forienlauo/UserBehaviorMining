@@ -21,6 +21,18 @@ class CNNTrainer(object):
     KEEP_PROB = 0.4
 
     @staticmethod
+    def print_usage():
+        print("""
+need args:
+    <delimiter>
+    <train_data_x_file_path> <train_data_y_file_path> <test_data_x_file_path> <test_data_y_file_path>
+    <initial_height> <initial_width> <initial_channels> <target_class_cnt>
+    <iteration> <batch_size>
+    <model_file_path>
+    [cpu_core_num]
+""")
+
+    @staticmethod
     def fit(argv):
         """支持训练并评估 baseline 级别的输入为任意<height, width, in_channels, target_class_cnt> 的 cnn 模型
         cnn的样本格式: 每行样本是一张拉成1维的图片(height*weight*in_channels), 外加 one_hot形式的标签(长度为 target_class_cnt )
@@ -38,6 +50,10 @@ class CNNTrainer(object):
                         cpu_core_num,
                     ]
         """
+        if len(argv[1:]) <= 13:
+            CNNTrainer.print_usage()
+            return 1
+
         # argv
         _offset, _length = 1, 1
         delimiter, = argv[_offset:_offset + _length]
