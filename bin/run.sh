@@ -6,4 +6,4 @@ cd $dir/..
 
 log_file="log/`date +%Y-%m-%d-%H-%M`.log"
 
-nohup python start.py $@ >$log_file 2>&1 &
+nohup python start.py $@ >> $log_file 2>&1 &
