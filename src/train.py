@@ -191,7 +191,9 @@ need args:
 
                 W_conv1 = weight_variable(
                     [CNNTrainer.CONV_HEIGHT, CNNTrainer.CONV_WIDTH, _in_channels1, _out_channels1], name='W_conv1', )
+                tf.summary.histogram('W_conv1', W_conv1)
                 b_conv1 = bias_variable([_out_channels1], name='b_conv1', )
+                tf.summary.histogram('b_conv1', b_conv1)
                 h_conv1 = tf.nn.relu(conv2d(in1, W_conv1) + b_conv1, name='h_conv1', )
 
                 out1 = h_conv1
@@ -215,7 +217,9 @@ need args:
 
                 W_conv2 = weight_variable(
                     [CNNTrainer.CONV_HEIGHT, CNNTrainer.CONV_WIDTH, _in_channels2, _out_channels2], name='W_conv2', )
+                tf.summary.histogram('W_conv2', W_conv2)
                 b_conv2 = bias_variable([_out_channels2], name='b_conv2', )
+                tf.summary.histogram('b_conv2', b_conv2)
                 h_conv2 = tf.nn.relu(conv2d(in3, W_conv2) + b_conv2, name='h_conv2', )
 
                 out3 = h_conv2
