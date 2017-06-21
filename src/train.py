@@ -31,6 +31,7 @@ need args:
     <model_file_path>
     <summary_log_dir_path>
     [cpu_core_num]
+    [<conv_height> <conv_width>]
 """)
 
     @staticmethod
@@ -57,6 +58,7 @@ need args:
             return 1
 
         # argv
+        # required
         _offset, _length = 1, 1
         delimiter, = argv[_offset:_offset + _length]
         _offset, _length = _offset + _length, 4
@@ -75,6 +77,11 @@ need args:
         cpu_core_num = conf.CPU_COUNT
         if len(argv) > _offset:
             cpu_core_num, = map(int, argv[_offset:_offset + _length])
+        _offset, _length = _offset + _length, 2
+        conv_height = CNNTrainer.CONV_HEIGHT
+        conv_width = CNNTrainer.CONV_WIDTH
+        if len(argv) > _offset:
+            conv_height, conv_width = map(int, argv[_offset:_offset + _length])
 
         # Construct
         # input and labels
@@ -86,6 +93,7 @@ need args:
         train_per_step, accuracy = CNNTrainer.construct(
             initial_height, initial_width, initial_channels, target_class_cnt,
             x, y_, keep_prob,
+            conv_height, conv_width,
         )
 
         # load data
@@ -156,6 +164,7 @@ need args:
     def construct(
             initial_height, initial_width, initial_channels, target_class_cnt,
             x, y_, keep_prob,
+            conv_height, conv_width,
     ):
         def weight_variable(shape, name=None, ):
             initial = tf.truncated_normal(shape, stddev=0.1)
@@ -193,7 +202,7 @@ need args:
                 _out_channels1 = 32
 
                 W_conv1 = weight_variable(
-                    [CNNTrainer.CONV_HEIGHT, CNNTrainer.CONV_WIDTH, _in_channels1, _out_channels1], name='W_conv1', )
+                    [conv_height, conv_width, _in_channels1, _out_channels1], name='W_conv1', )
                 tf.summary.histogram('W_conv1', W_conv1)
                 b_conv1 = bias_variable([_out_channels1], name='b_conv1', )
                 tf.summary.histogram('b_conv1', b_conv1)
@@ -219,7 +228,7 @@ need args:
                 _out_channels2 = 64
 
                 W_conv2 = weight_variable(
-                    [CNNTrainer.CONV_HEIGHT, CNNTrainer.CONV_WIDTH, _in_channels2, _out_channels2], name='W_conv2', )
+                    [conv_height, conv_width, _in_channels2, _out_channels2], name='W_conv2', )
                 tf.summary.histogram('W_conv2', W_conv2)
                 b_conv2 = bias_variable([_out_channels2], name='b_conv2', )
                 tf.summary.histogram('b_conv2', b_conv2)

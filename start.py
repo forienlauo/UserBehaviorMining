@@ -31,6 +31,7 @@ if __name__ == '__main__':
             'resource/little_data/model/cnn',
             'resource/little_data/summary/cnn',
             2,
+            4, 4,
         ])
     argv = map(lambda x: str(x), sys.argv)
 
