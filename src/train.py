@@ -29,6 +29,7 @@ need args:
     <initial_height> <initial_width> <initial_channels> <target_class_cnt>
     <iteration> <batch_size>
     <model_file_path>
+    <summary_log_dir_path>
     [cpu_core_num]
 """)
 
@@ -39,18 +40,19 @@ need args:
             即,每行共有 height*weight*in_channels + target_class_cnt 列
         @:param argv list,
                     argv[0]: 启动文件名;
-                    argv[1:13]为必选项, <
+                    argv[1:14]为必选项, <
                         delimiter,
                         train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path,
                         initial_height, initial_width, initial_channels, target_class_cnt,
                         iteration, batch_size,
                         model_file_path,
+                        summary_log_dir_path,
                     >;
-                    argv[13:]为可选项, [
+                    argv[14:]为可选项, [
                         cpu_core_num,
                     ]
         """
-        if len(argv[1:]) < 12:
+        if len(argv[1:]) < 13:
             CNNTrainer.print_usage()
             return 1
 
@@ -66,6 +68,8 @@ need args:
         iteration, batch_size = map(int, argv[_offset:_offset + _length])
         _offset, _length = _offset + _length, 1
         model_file_path, = argv[_offset:_offset + _length]
+        _offset, _length = _offset + _length, 1
+        summary_log_dir_path, = argv[_offset:_offset + _length]
         # optional
         _offset, _length = _offset + _length, 1
         cpu_core_num = conf.CPU_COUNT
@@ -102,7 +106,7 @@ need args:
             logging.info("start to train.")
             start_time = time.time()
             CNNTrainer.train(
-                sess,
+                sess, summary_log_dir_path,
                 train_per_step, accuracy,
                 iteration, batch_size,
                 train_data, test_data, target_class_cnt,
@@ -284,15 +288,14 @@ need args:
 
     @staticmethod
     def train(
-            sess,
+            sess, summary_log_dir_path,
             train_per_step, accuracy=None,
             iteration=None, batch_size=None,
             train_data=None, test_data=None, target_class_cnt=None,
             x=None, y_=None, keep_prob=None,
     ):
         summaries = tf.summary.merge_all()
-        summay_log_dir_path = 'tmp/model_visualization'
-        summary_writer = tf.summary.FileWriter(logdir=summay_log_dir_path, graph=sess.graph)
+        summary_writer = tf.summary.FileWriter(logdir=summary_log_dir_path, graph=sess.graph)
         sess.run(tf.global_variables_initializer())
         for i in range(iteration):
             batch_train = random_sample(train_data, batch_size)

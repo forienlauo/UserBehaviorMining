@@ -28,7 +28,8 @@ if __name__ == '__main__':
             testDataFilePaths[0], testDataFilePaths[1],
             60, 36, 1, 2,
             1000, 20,
-            'resource/little_data/model/cnn.model',
+            'resource/little_data/model/cnn',
+            'resource/little_data/summary/cnn',
             2,
         ])
     argv = map(lambda x: str(x), sys.argv)
