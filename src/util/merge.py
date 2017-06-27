@@ -197,6 +197,6 @@ if __name__ == '__main__':
 
     users = UserBehaviorFeatures()
     train_x, train_y = users.extrace_and_process('../../resource/little_data/filtered/include/fraud_user_0_sample.txt', 'fraud_user')
-    train_x, train_y = users.extrace_and_process('../../resource/little_data/filtered/include/normal_user_19.txt', 'normal_user')
+    train_x, train_y = users.extrace_and_process('../../resource/little_data/filtered/include/normal_user_0.txt', 'normal_user')
 
 
