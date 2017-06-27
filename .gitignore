@@ -114,3 +114,4 @@ resource/
 tmp/
 tmp.*
 MNIST_data/
+log/

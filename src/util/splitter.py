@@ -1,7 +1,7 @@
 # coding=utf-8
+import math
 import os
 
-import math
 from src.util import common
 
 
