@@ -30,8 +30,11 @@ need args:
     <iteration> <batch_size>
     <model_file_path>
     <summary_log_dir_path>
+    <conv_height> <conv_width>
+    <neurons_nums>
     [cpu_core_num]
-    [<conv_height> <conv_width>]
+where
+    neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 2 conv layers)
 """)
 
     @staticmethod
@@ -42,16 +45,20 @@ need args:
         @:param argv list,
                     argv[0]: 启动文件名;
                     argv[1:]为:
-                        <delimiter>
-                        <train_data_x_file_path> <train_data_y_file_path> <test_data_x_file_path> <test_data_y_file_path>
-                        <initial_height> <initial_width> <initial_channels> <target_class_cnt>
-                        <iteration> <batch_size>
-                        <model_file_path>
-                        <summary_log_dir_path>
-                        [cpu_core_num]
-                        [<conv_height> <conv_width>]
+                        need args:
+                            <delimiter>
+                            <train_data_x_file_path> <train_data_y_file_path> <test_data_x_file_path> <test_data_y_file_path>
+                            <initial_height> <initial_width> <initial_channels> <target_class_cnt>
+                            <iteration> <batch_size>
+                            <model_file_path>
+                            <summary_log_dir_path>
+                            <conv_height> <conv_width>
+                            <neurons_nums>
+                            [cpu_core_num]
+                        where
+                            neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 2 conv layers)
         """
-        if len(argv[1:]) < 13:
+        if len(argv[1:]) < 16:
             CNNTrainer.print_usage()
             return 1
 
@@ -70,16 +77,15 @@ need args:
         model_file_path, = argv[_offset:_offset + _length]
         _offset, _length = _offset + _length, 1
         summary_log_dir_path, = argv[_offset:_offset + _length]
+        _offset, _length = _offset + _length, 2
+        conv_height, conv_width = map(int, argv[_offset:_offset + _length])
+        _offset, _length = _offset + _length, 1
+        neurons_nums, = map(int, str(argv[_offset:_offset + _length]).strip().split(','))
         # optional
         _offset, _length = _offset + _length, 1
         cpu_core_num = conf.CPU_COUNT
         if len(argv) > _offset:
             cpu_core_num, = map(int, argv[_offset:_offset + _length])
-        _offset, _length = _offset + _length, 2
-        conv_height = CNNTrainer.CONV_HEIGHT
-        conv_width = CNNTrainer.CONV_WIDTH
-        if len(argv) > _offset:
-            conv_height, conv_width = map(int, argv[_offset:_offset + _length])
 
         # Construct
         # input and labels
@@ -92,6 +98,7 @@ need args:
             initial_height, initial_width, initial_channels, target_class_cnt,
             x, y_, keep_prob,
             conv_height, conv_width,
+            neurons_nums,
         )
 
         # load data
@@ -163,6 +170,7 @@ need args:
             initial_height, initial_width, initial_channels, target_class_cnt,
             x, y_, keep_prob,
             conv_height, conv_width,
+            neurons_nums,
     ):
         def weight_variable(shape, name=None, ):
             initial = tf.truncated_normal(shape, stddev=0.1)
@@ -197,7 +205,7 @@ need args:
                 in1 = out0  # shape[_example_cnt, _height1, _width1, _in_channels1]
                 _height1, _width1 = in1.get_shape()[1].value, in1.get_shape()[2].value
                 _in_channels1 = in1.get_shape()[3].value
-                _out_channels1 = 32
+                _out_channels1 = neurons_nums[0]
 
                 W_conv1 = weight_variable(
                     [conv_height, conv_width, _in_channels1, _out_channels1], name='W_conv1', )
@@ -223,7 +231,7 @@ need args:
                 in3 = out2  # shape[_example_cnt, _height2, _width2, _in_channels2]
                 _height2, _width2 = in3.get_shape()[1].value, in3.get_shape()[2].value
                 _in_channels2 = in3.get_shape()[3].value
-                _out_channels2 = 64
+                _out_channels2 = neurons_nums[1]
 
                 W_conv2 = weight_variable(
                     [conv_height, conv_width, _in_channels2, _out_channels2], name='W_conv2', )

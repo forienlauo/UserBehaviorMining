@@ -32,6 +32,7 @@ if __name__ == '__main__':
             'resource/little_data/summary/cnn',
             2,
             4, 4,
+            '32,64'
         ])
     argv = map(lambda x: str(x), sys.argv)
 
