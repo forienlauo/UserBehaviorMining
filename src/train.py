@@ -41,17 +41,15 @@ need args:
             即,每行共有 height*weight*in_channels + target_class_cnt 列
         @:param argv list,
                     argv[0]: 启动文件名;
-                    argv[1:14]为必选项, <
-                        delimiter,
-                        train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path,
-                        initial_height, initial_width, initial_channels, target_class_cnt,
-                        iteration, batch_size,
-                        model_file_path,
-                        summary_log_dir_path,
-                    >;
-                    argv[14:]为可选项, [
-                        cpu_core_num,
-                    ]
+                    argv[1:]为:
+                        <delimiter>
+                        <train_data_x_file_path> <train_data_y_file_path> <test_data_x_file_path> <test_data_y_file_path>
+                        <initial_height> <initial_width> <initial_channels> <target_class_cnt>
+                        <iteration> <batch_size>
+                        <model_file_path>
+                        <summary_log_dir_path>
+                        [cpu_core_num]
+                        [<conv_height> <conv_width>]
         """
         if len(argv[1:]) < 13:
             CNNTrainer.print_usage()
