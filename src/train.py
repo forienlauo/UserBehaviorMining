@@ -80,7 +80,8 @@ where
         _offset, _length = _offset + _length, 2
         conv_height, conv_width = map(int, argv[_offset:_offset + _length])
         _offset, _length = _offset + _length, 1
-        neurons_nums, = map(int, str(argv[_offset:_offset + _length]).strip().split(','))
+        _neurons_nums_str, = argv[_offset:_offset + _length]
+        neurons_nums = map(int, str(_neurons_nums_str).strip().split(','))
         # optional
         _offset, _length = _offset + _length, 1
         cpu_core_num = conf.CPU_COUNT
