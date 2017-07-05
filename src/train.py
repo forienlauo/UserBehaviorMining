@@ -286,8 +286,8 @@ where
 
             out7 = y  # shape[_example_cnt, _out_width4]
 
+        # Train definition
         with tf.name_scope('trainer') as _:
-            # Train definition
             loss = tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y), name='loss', )
             train_per_step = tf.train.AdamOptimizer(1e-5).minimize(loss, name='train_per_step', )
@@ -295,13 +295,30 @@ where
 
             trainer = CNNTrainer.Trainer(train_per_step)
 
+        # Evaluate definition
         with tf.name_scope('evaluator') as _:
-            # Evaluate definition
-            correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1), name='correct_prediction', )
+            correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accuracy', )
             accuracy_summary = tf.summary.scalar('accuracy', accuracy)
 
-            evaluator = CNNTrainer.Evaluator(accuracy)
+            # 该模型初步处理2种用户类型，正常、非正常用户，正常用户序号为0，异常用户序号为1
+            # 关心异常用户的查全率、查准率
+            TARGET_LABEL_IDX = 1
+            _right_label = TARGET_LABEL_IDX
+            _true_right = tf.equal(tf.argmax(y_, 1), _right_label)
+            _predicted_right = tf.equal(tf.argmax(y, 1), _right_label)
+            _both_right = tf.logical_and(_true_right, _predicted_right)
+            _both_right_cnt = tf.reduce_sum(tf.cast(_both_right, dtype=tf.int32))
+            _true_right_cnt = tf.reduce_sum(tf.cast(_true_right, dtype=tf.int32))
+            _predicted_right_cnt = tf.reduce_sum(tf.cast(_predicted_right, dtype=tf.int32))
+            recall = -1.0 if _true_right_cnt == 0 else \
+                tf.divide(tf.to_float(_both_right_cnt), tf.to_float(_true_right_cnt), name='recall')
+            precision = -1.0 if _predicted_right_cnt == 0 else \
+                tf.divide(tf.to_float(_both_right_cnt), tf.to_float(_predicted_right_cnt), name='precision')
+            precision_summary = tf.summary.scalar('precision', precision)
+            recall_summary = tf.summary.scalar('recall', recall)
+
+            evaluator = CNNTrainer.Evaluator(accuracy, recall, precision, )
 
         return trainer, evaluator
 
@@ -317,6 +334,7 @@ where
             cache=None,
     ):
         if cache is None or not os.path.exists(cache):
+            # TODO 减小数据加载的内存占用(如预先shuffle,然后顺序yield读)
             data_x, data_y = map(lambda _: np.loadtxt(_, delimiter=delimiter),
                                  (data_x_file_path, data_y_file_path,))
             data = np.column_stack((data_x, data_y,))
@@ -353,7 +371,7 @@ where
         return tf.get_default_graph()
 
     @staticmethod
-    def view_accuracy(
+    def view_evaluate_result(
             delimiter,
             test_data_x_file_path, test_data_y_file_path,
             target_class_cnt,
@@ -387,26 +405,27 @@ where
             y_ = graph.get_tensor_by_name("input/y_:0")
             keep_prob = graph.get_tensor_by_name("input/keep_prob:0")
             accuracy = graph.get_tensor_by_name("evaluator/accuracy:0")
+            recall = graph.get_tensor_by_name("evaluator/recall:0")
+            precision = graph.get_tensor_by_name("evaluator/precision:0")
             logging.info("load model from: %s" % model_file_path)
 
             # evaluate
             logging.info("start to evaluate.")
             start_time = time.time()
             test_data_len = len(test_data)
-            evaluator = CNNTrainer.Evaluator(accuracy)
+            evaluator = CNNTrainer.Evaluator(accuracy, accuracy, precision, )
             evaluate_result = evaluator.evaluate(
                 sess,
                 batch_size,
                 test_data, target_class_cnt,
                 x, y_, keep_prob
             )
-            final_accuracy = evaluate_result.accuracy_ratio
             del test_data
             end_time = time.time()
             logging.info("end to evaluate.")
             logging.info('cost time: %.2fs' % (end_time - start_time,))
             logging.info('total data: %d' % (test_data_len,))
-            logging.info("final test accuracy %g" % (final_accuracy,))
+            logging.info("evaluate result %s" % (evaluate_result,))
 
     @staticmethod
     def add_image2summary(x, image_name_prefix):
@@ -417,6 +436,7 @@ where
             tf.summary.image(image_name, image)
 
     class Trainer(object):
+        PRINT_PROGRESS_PER_STEP_NUM = 10
 
         def __init__(self, train_per_step, ):
             super(CNNTrainer.Trainer, self).__init__()
@@ -440,7 +460,7 @@ where
                 _X_train, _Y_train = CNNTrainer.format_inputs(batch_train, target_class_cnt, )
                 # print progress
                 if evaluator is not None:
-                    if i % 100 == 0:
+                    if i % CNNTrainer.Trainer.PRINT_PROGRESS_PER_STEP_NUM == 0:
                         train_evl_rs = evaluator.evaluate_one(
                             sess,
                             batch_train, target_class_cnt,
@@ -455,6 +475,7 @@ where
                         logging.info(
                             "step %d, training evaluate_result: %s, testing evaluate_result: %s"
                             % (i, train_evl_rs, test_evl_rs))
+                        # TODO 注释掉下段代码。实验阶段应该关注各评估指标的变化
                         accuracy_threshold = 0.83
                         if test_evl_rs.accuracy_ratio > accuracy_threshold \
                                 and train_evl_rs.accuracy_ratio > accuracy_threshold:
@@ -471,9 +492,11 @@ where
 
     class Evaluator(object):
 
-        def __init__(self, accuracy, ):
+        def __init__(self, accuracy, recall, precision, ):
             super(CNNTrainer.Evaluator, self).__init__()
             self.accuracy = accuracy
+            self.recall = recall
+            self.precision = precision
 
         def evaluate(
                 self,
@@ -482,16 +505,25 @@ where
                 data, target_class_cnt,
                 x, y_, keep_prob,
         ):
-            accuracy = self.accuracy
-
             iteration = int(len(data) / batch_size) + 1
-            tmp_sum_accuracy = 0
+            sum_accuracy = 0
+            sum_recall = 0
+            sum_precision = 0
+            # FIXME 每个batch的实际size不严格相等,计算出来的准确率存在误差
             for i in range(iteration):
                 batch_test = random_sample(data, batch_size)
-                _X, _Y = CNNTrainer.format_inputs(batch_test, target_class_cnt, )
-                tmp_sum_accuracy += accuracy.eval(feed_dict={x: _X, y_: _Y, keep_prob: 1.0}, session=sess)
-            final_accuracy = tmp_sum_accuracy / iteration
-            result = CNNTrainer.Evaluator.Result(final_accuracy)
+                _result = self.evaluate_one(
+                    sess,
+                    batch_test, target_class_cnt,
+                    x, y_, keep_prob
+                )
+                sum_accuracy += _result.accuracy_ratio
+                sum_recall += _result.recall_ratio
+                sum_precision += _result.precision_ratio
+            final_accuracy = sum_accuracy / iteration
+            final_recall = sum_recall / iteration
+            final_precision = sum_precision / iteration
+            result = CNNTrainer.Evaluator.Result(final_accuracy, final_recall, final_precision, )
             return result
 
         def evaluate_one(
@@ -501,16 +533,24 @@ where
                 x, y_, keep_prob,
         ):
             accuracy = self.accuracy
+            recall = self.recall
+            precision = self.precision
 
             _X, _Y = CNNTrainer.format_inputs(data, target_class_cnt, )
-            test_accuracy = accuracy.eval(feed_dict={x: _X, y_: _Y, keep_prob: 1.0}, session=sess)
-            result = CNNTrainer.Evaluator.Result(test_accuracy)
+            feed_dict = {x: _X, y_: _Y, keep_prob: 1.0}
+            accuracy_ratio = accuracy.eval(feed_dict=feed_dict, session=sess)
+            recall_ratio = recall.eval(feed_dict=feed_dict, session=sess)
+            precision_ratio = precision.eval(feed_dict=feed_dict, session=sess)
+            result = CNNTrainer.Evaluator.Result(accuracy_ratio, recall_ratio, precision_ratio)
             return result
 
         class Result(object):
-            def __init__(self, accuracy_ratio):
+            def __init__(self, accuracy_ratio, recall_ratio, precision_ratio):
                 super(CNNTrainer.Evaluator.Result, self).__init__()
                 self.accuracy_ratio = accuracy_ratio
+                self.recall_ratio = recall_ratio
+                self.precision_ratio = precision_ratio
 
             def __str__(self):
-                return "result {accuracy:%g}" % (self.accuracy_ratio,)
+                return "result {accuracy: %g, recall: %g, precision: %g}" \
+                       % (self.accuracy_ratio, self.recall_ratio, self.precision_ratio,)
