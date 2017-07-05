@@ -253,8 +253,25 @@ where
                 out = h_pool
                 CNNTrainer.add_image2summary(out, 'out')
 
-            # F5, Densely Connected Layer(Full Connected Layer)
-            with tf.name_scope('F5') as _:
+            # C5
+            with tf.name_scope('C5') as _:
+                _in = out  # shape[_example_cnt, _height, _width, _in_channels]
+                _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
+                _in_channels = _in.get_shape()[3].value
+                _out_channels = neurons_nums[2]
+
+                W_conv = weight_variable(
+                    [conv_height, conv_width, _in_channels, _out_channels], name='W_conv', )
+                tf.summary.histogram('W_conv', W_conv)
+                b_conv = bias_variable([_out_channels], name='b_conv', )
+                tf.summary.histogram('b_conv', b_conv)
+                h_conv = tf.nn.relu(conv2d(_in, W_conv) + b_conv, name='h_conv', )
+
+                out = h_conv
+                CNNTrainer.add_image2summary(out, 'out')
+
+            # F6, Densely Connected Layer(Full Connected Layer)
+            with tf.name_scope('F6') as _:
                 _in = out  # shape[_example_cnt, _height, _width, _in_channels]
                 _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
                 _in_channels = _in.get_shape()[3].value
