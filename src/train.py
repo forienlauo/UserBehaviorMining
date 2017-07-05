@@ -203,86 +203,87 @@ where
 
             # C1
             with tf.name_scope('C1') as _:
-                in1 = out0  # shape[_example_cnt, _height1, _width1, _in_channels1]
-                _height1, _width1 = in1.get_shape()[1].value, in1.get_shape()[2].value
-                _in_channels1 = in1.get_shape()[3].value
-                _out_channels1 = neurons_nums[0]
+                _in = out0  # shape[_example_cnt, _height, _width, _in_channels]
+                _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
+                _in_channels = _in.get_shape()[3].value
+                _out_channels = neurons_nums[0]
 
-                W_conv1 = weight_variable(
-                    [conv_height, conv_width, _in_channels1, _out_channels1], name='W_conv1', )
-                tf.summary.histogram('W_conv1', W_conv1)
-                b_conv1 = bias_variable([_out_channels1], name='b_conv1', )
-                tf.summary.histogram('b_conv1', b_conv1)
-                h_conv1 = tf.nn.relu(conv2d(in1, W_conv1) + b_conv1, name='h_conv1', )
+                W_conv = weight_variable(
+                    [conv_height, conv_width, _in_channels, _out_channels], name='W_conv', )
+                tf.summary.histogram('W_conv', W_conv)
+                b_conv = bias_variable([_out_channels], name='b_conv', )
+                tf.summary.histogram('b_conv', b_conv)
+                h_conv = tf.nn.relu(conv2d(_in, W_conv) + b_conv, name='h_conv', )
 
-                out1 = h_conv1
-                CNNTrainer.add_image2summary(out1, 'out1')
+                out = h_conv
+                CNNTrainer.add_image2summary(out, 'out')
 
             # S2
             with tf.name_scope('S2') as _:
-                in2 = out1
+                _in = out
 
-                h_pool2 = max_pool(in2, CNNTrainer.POOL_SHAPE, name='h_pool2', )
+                h_pool = max_pool(_in, CNNTrainer.POOL_SHAPE, name='h_pool', )
 
-                out2 = h_pool2
-                CNNTrainer.add_image2summary(out2, 'out2')
+                out = h_pool
+                CNNTrainer.add_image2summary(out, 'out')
 
             # C3
             with tf.name_scope('C3') as _:
-                in3 = out2  # shape[_example_cnt, _height3, _width3, _in_channels3]
-                _height3, _width3 = in3.get_shape()[1].value, in3.get_shape()[2].value
-                _in_channels3 = in3.get_shape()[3].value
-                _out_channels3 = neurons_nums[1]
+                _in = out  # shape[_example_cnt, _height, _width, _in_channels]
+                _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
+                _in_channels = _in.get_shape()[3].value
+                _out_channels = neurons_nums[1]
 
-                W_conv3 = weight_variable(
-                    [conv_height, conv_width, _in_channels3, _out_channels3], name='W_conv3', )
-                tf.summary.histogram('W_conv3', W_conv3)
-                b_conv3 = bias_variable([_out_channels3], name='b_conv3', )
-                tf.summary.histogram('b_conv3', b_conv3)
-                h_conv3 = tf.nn.relu(conv2d(in3, W_conv3) + b_conv3, name='h_conv3', )
+                W_conv = weight_variable(
+                    [conv_height, conv_width, _in_channels, _out_channels], name='W_conv', )
+                tf.summary.histogram('W_conv', W_conv)
+                b_conv = bias_variable([_out_channels], name='b_conv', )
+                tf.summary.histogram('b_conv', b_conv)
+                h_conv = tf.nn.relu(conv2d(_in, W_conv) + b_conv, name='h_conv', )
 
-                out3 = h_conv3
-                CNNTrainer.add_image2summary(out3, 'out3')
+                out = h_conv
+                CNNTrainer.add_image2summary(out, 'out')
 
             # S4
             with tf.name_scope('S4') as _:
-                in4 = out3
+                _in = out
 
-                h_pool4 = max_pool(in4, CNNTrainer.POOL_SHAPE, name='h_pool2', )
+                h_pool = max_pool(_in, CNNTrainer.POOL_SHAPE, name='h_pool', )
 
-                out4 = h_pool4
-                CNNTrainer.add_image2summary(out4, 'out4')
+                out = h_pool
+                CNNTrainer.add_image2summary(out, 'out')
 
             # F5, Densely Connected Layer(Full Connected Layer)
             with tf.name_scope('F5') as _:
-                in5 = out4  # shape[_example_cnt, _height5, _width5, _in_channels5]
-                _height5, _width5 = in5.get_shape()[1].value, in5.get_shape()[2].value
-                _in_channels5 = in5.get_shape()[3].value
-                _out_width5 = 1024
+                _in = out  # shape[_example_cnt, _height, _width, _in_channels]
+                _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
+                _in_channels = _in.get_shape()[3].value
+                _out_width = 1024
 
-                W_fc5 = weight_variable([_height5 * _width5 * _in_channels5, _out_width5], name='W_fc5', )
-                b_fc5 = bias_variable([_out_width5], name='b_fc5', )
-                h_pool5_flat = tf.reshape(in5, [-1, _height5 * _width5 * _in_channels5], name='h_pool5_flat', )
-                h_fc5 = tf.nn.relu(tf.matmul(h_pool5_flat, W_fc5) + b_fc5, name='h_fc5', )  # 这不再卷积,直接矩阵乘
+                W_fc = weight_variable([_height * _width * _in_channels, _out_width], name='W_fc', )
+                b_fc = bias_variable([_out_width], name='b_fc', )
+                h_pool_flat = tf.reshape(_in, [-1, _height * _width * _in_channels], name='h_pool_flat', )
+                h_fc = tf.nn.relu(tf.matmul(h_pool_flat, W_fc) + b_fc, name='h_fc', )  # 这不再卷积,直接矩阵乘
 
-                out5 = h_fc5  # shape[_example_cnt, _out_width5]
+                out = h_fc  # shape[_example_cnt, _out_width]
 
-            # D6, Dropout
-            with tf.name_scope('D6') as _:
-                in6 = out5
+            # Dropout Layer
+            with tf.name_scope('DropoutLayer') as _:
+                _in = out
 
-                h_fc6_drop = tf.nn.dropout(in6, keep_prob, name='h_fc6_drop', )
+                h_fc_drop = tf.nn.dropout(_in, keep_prob, name='h_fc_drop', )
 
-                out6 = h_fc6_drop
+                out = h_fc_drop
 
             # Output Layer
             with tf.name_scope('OutputLayer') as _:
-                in_ = out6  # shape[_example_cnt, _in_width_]
-                _in_width_ = in_.get_shape()[1].value
+                _in_ = out  # shape[_example_cnt, _in_width_]
+                _in_width_ = _in_.get_shape()[1].value
                 _out_width_ = target_class_cnt
+
                 W_fc_ = weight_variable([_in_width_, _out_width_], name='W_fc_', )
                 b_fc_ = bias_variable([_out_width_], name='b_fc_', )
-                y = tf.add(tf.matmul(in_, W_fc_), b_fc_, name='y', )
+                y = tf.add(tf.matmul(_in_, W_fc_), b_fc_, name='y', )
 
                 out_ = y  # shape[_example_cnt, _out_width_]
 
