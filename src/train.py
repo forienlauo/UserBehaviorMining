@@ -539,7 +539,10 @@ where
                 sum_recall += _result.recall_ratio
                 sum_precision += _result.precision_ratio
             final_accuracy = sum_accuracy / iteration
+            # FIXME 小数据量时,final_recall 计算波动大
             final_recall = sum_recall / iteration
+            # FIXME 小数据量时,final_precision 计算波动大
+            # FIXME final_precision 有时会返回 nan
             final_precision = sum_precision / iteration
             result = CNNTrainer.Evaluator.Result(final_accuracy, final_recall, final_precision, )
             return result
