@@ -436,7 +436,7 @@ where
             tf.summary.image(image_name, image)
 
     class Trainer(object):
-        PRINT_PROGRESS_PER_STEP_NUM = 10
+        PRINT_PROGRESS_PER_STEP_NUM = 100
 
         def __init__(self, train_per_step, ):
             super(CNNTrainer.Trainer, self).__init__()
