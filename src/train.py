@@ -413,7 +413,7 @@ where
             logging.info("start to evaluate.")
             start_time = time.time()
             test_data_len = len(test_data)
-            evaluator = CNNTrainer.Evaluator(accuracy, accuracy, precision, )
+            evaluator = CNNTrainer.Evaluator(accuracy, recall, precision, )
             evaluate_result = evaluator.evaluate(
                 sess,
                 batch_size,
@@ -475,14 +475,14 @@ where
                         logging.info(
                             "step %d, training evaluate_result: %s, testing evaluate_result: %s"
                             % (i, train_evl_rs, test_evl_rs))
-                        # TODO 注释掉下段代码。实验阶段应该关注各评估指标的变化
-                        accuracy_threshold = 0.83
-                        if test_evl_rs.accuracy_ratio > accuracy_threshold \
-                                and train_evl_rs.accuracy_ratio > accuracy_threshold:
-                            logging.info(
-                                "exiting for reason: both train_accuracy and test_accuracy gt accuracy_threshold(%s)"
-                                % (accuracy_threshold,))
-                            return
+                        # TODO 注释掉下段代码。实验阶段应该关注各评估指标的变化,上线时可根据实际效果选择是否打开
+                        # accuracy_threshold = 0.83
+                        # if test_evl_rs.accuracy_ratio > accuracy_threshold \
+                        #         and train_evl_rs.accuracy_ratio > accuracy_threshold:
+                        #     logging.info(
+                        #         "exiting for reason: both train_accuracy and test_accuracy gt accuracy_threshold(%s)"
+                        #         % (accuracy_threshold,))
+                        #     return
                 feed = {x: _X_train, y_: _Y_train, keep_prob: CNNTrainer.KEEP_PROB}
                 train_per_step.run(feed_dict=feed, session=sess)
                 summaries_result = sess.run(summaries, feed_dict=feed, )
