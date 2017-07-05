@@ -95,7 +95,8 @@ where
             y_ = tf.placeholder(tf.float32, shape=[None, target_class_cnt], name="y_", )
             keep_prob = tf.placeholder(tf.float32, name='keep_prob', )
         # trainer and evaluator
-        train_per_step, accuracy = CNNTrainer.construct(
+
+        trainer, evaluator = CNNTrainer.construct(
             initial_height, initial_width, initial_channels, target_class_cnt,
             x, y_, keep_prob,
             conv_height, conv_width,
@@ -130,9 +131,9 @@ where
             # train
             logging.info("start to train.")
             start_time = time.time()
-            CNNTrainer.train(
+            trainer.train(
                 sess, summary_log_dir_path,
-                train_per_step, accuracy,
+                evaluator,
                 iteration, batch_size,
                 train_data, test_data, target_class_cnt,
                 x, y_, keep_prob,
@@ -150,9 +151,8 @@ where
             logging.info("start to evaluate.")
             start_time = time.time()
             test_data_len = len(test_data)
-            final_accuracy = CNNTrainer.evaluate(
+            evaluate_result = evaluator.evaluate(
                 sess,
-                accuracy,
                 batch_size,
                 test_data, target_class_cnt,
                 x, y_, keep_prob,
@@ -162,7 +162,7 @@ where
             logging.info("end to evaluate.")
             logging.info('cost time: %.2fs' % (end_time - start_time,))
             logging.info('total test data: %d' % (test_data_len,))
-            logging.info("final test accuracy %g" % (final_accuracy,))
+            logging.info("final evaluate_result: %s" % (evaluate_result,))
 
         return 0
 
@@ -293,75 +293,20 @@ where
             train_per_step = tf.train.AdamOptimizer(1e-5).minimize(loss, name='train_per_step', )
             loss_summary = tf.summary.scalar('loss', loss)
 
+            trainer = CNNTrainer.Trainer(train_per_step)
+
         with tf.name_scope('evaluator') as _:
             # Evaluate definition
             correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1), name='correct_prediction', )
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accuracy', )
             accuracy_summary = tf.summary.scalar('accuracy', accuracy)
 
-        return train_per_step, accuracy
+            evaluator = CNNTrainer.Evaluator(accuracy)
+
+        return trainer, evaluator
 
     @staticmethod
-    def train(
-            sess, summary_log_dir_path,
-            train_per_step, accuracy=None,
-            iteration=None, batch_size=None,
-            train_data=None, test_data=None, target_class_cnt=None,
-            x=None, y_=None, keep_prob=None,
-    ):
-        summaries = tf.summary.merge_all()
-        summary_writer = tf.summary.FileWriter(logdir=summary_log_dir_path, graph=sess.graph)
-        sess.run(tf.global_variables_initializer())
-        for i in range(iteration):
-            batch_train = random_sample(train_data, batch_size)
-            _X_train, _Y_train = CNNTrainer.__format_inputs(batch_train, target_class_cnt, )
-            # print progress
-            if accuracy is not None:
-                if i % 100 == 0:
-                    train_accuracy = accuracy.eval(feed_dict={x: _X_train, y_: _Y_train, keep_prob: 1.0}, session=sess)
-                    batch_test = random_sample(test_data, 2 * batch_size)
-                    _X_test, _Y_test = CNNTrainer.__format_inputs(batch_test, target_class_cnt, )
-                    test_accuracy = accuracy.eval(feed_dict={x: _X_test, y_: _Y_test, keep_prob: 1.0}, session=sess)
-                    logging.info(
-                        "step %d, training accuracy %g, testing accuracy %g" % (i, train_accuracy, test_accuracy))
-                    if test_accuracy > 0.83 and train_accuracy > 0.83:  return
-            feed = {x: _X_train, y_: _Y_train, keep_prob: CNNTrainer.KEEP_PROB}
-            train_per_step.run(feed_dict=feed, session=sess)
-            summaries_result = sess.run(summaries, feed_dict=feed, )
-            summary_writer.add_summary(summaries_result, global_step=i)
-        summary_writer.close()
-
-    @staticmethod
-    def evaluate(
-            sess,
-            accuracy,
-            batch_size,
-            data, target_class_cnt,
-            x, y_, keep_prob,
-
-    ):
-        iteration = int(len(data) / batch_size) + 1
-        tmp_sum_accuracy = 0
-        for i in range(iteration):
-            batch_test = random_sample(data, batch_size)
-            _X, _Y = CNNTrainer.__format_inputs(batch_test, target_class_cnt, )
-            tmp_sum_accuracy += accuracy.eval(feed_dict={x: _X, y_: _Y, keep_prob: 1.0}, session=sess)
-        final_accuracy = tmp_sum_accuracy / iteration
-        return final_accuracy
-
-    @staticmethod
-    def evaluate_one(
-            sess,
-            accuracy,
-            data, target_class_cnt,
-            x, y_, keep_prob,
-    ):
-        _X, _Y = CNNTrainer.__format_inputs(data, target_class_cnt, )
-        test_accuracy = accuracy.eval(feed_dict={x: _X, y_: _Y, keep_prob: 1.0}, session=sess)
-        return test_accuracy
-
-    @staticmethod
-    def __format_inputs(example, target_class_cnt):
+    def format_inputs(example, target_class_cnt):
         example = np.array(example)
         return example[:, :-target_class_cnt], example[:, -target_class_cnt:]
 
@@ -448,13 +393,14 @@ where
             logging.info("start to evaluate.")
             start_time = time.time()
             test_data_len = len(test_data)
-            final_accuracy = CNNTrainer.evaluate(
+            evaluator = CNNTrainer.Evaluator(accuracy)
+            evaluate_result = evaluator.evaluate(
                 sess,
-                accuracy,
                 batch_size,
                 test_data, target_class_cnt,
-                x, y_, keep_prob,
+                x, y_, keep_prob
             )
+            final_accuracy = evaluate_result.accuracy_ratio
             del test_data
             end_time = time.time()
             logging.info("end to evaluate.")
@@ -469,3 +415,102 @@ where
             image = x[:, :, :, channel_no:channel_no + 1]
             image_name = '%s-%d' % (image_name_prefix, channel_no,)
             tf.summary.image(image_name, image)
+
+    class Trainer(object):
+
+        def __init__(self, train_per_step, ):
+            super(CNNTrainer.Trainer, self).__init__()
+            self.train_per_step = train_per_step
+
+        def train(
+                self,
+                sess, summary_log_dir_path,
+                evaluator=None,
+                iteration=None, batch_size=None,
+                train_data=None, test_data=None, target_class_cnt=None,
+                x=None, y_=None, keep_prob=None,
+        ):
+            train_per_step = self.train_per_step
+
+            summaries = tf.summary.merge_all()
+            summary_writer = tf.summary.FileWriter(logdir=summary_log_dir_path, graph=sess.graph)
+            sess.run(tf.global_variables_initializer())
+            for i in range(iteration):
+                batch_train = random_sample(train_data, batch_size)
+                _X_train, _Y_train = CNNTrainer.format_inputs(batch_train, target_class_cnt, )
+                # print progress
+                if evaluator is not None:
+                    if i % 100 == 0:
+                        train_evl_rs = evaluator.evaluate_one(
+                            sess,
+                            batch_train, target_class_cnt,
+                            x, y_, keep_prob
+                        )
+                        batch_test = random_sample(test_data, 2 * batch_size)
+                        test_evl_rs = evaluator.evaluate_one(
+                            sess,
+                            batch_test, target_class_cnt,
+                            x, y_, keep_prob
+                        )
+                        logging.info(
+                            "step %d, training evaluate_result: %s, testing evaluate_result: %s"
+                            % (i, train_evl_rs, test_evl_rs))
+                        accuracy_threshold = 0.83
+                        if test_evl_rs.accuracy_ratio > accuracy_threshold \
+                                and train_evl_rs.accuracy_ratio > accuracy_threshold:
+                            logging.info(
+                                "exiting for reason: both train_accuracy and test_accuracy gt accuracy_threshold(%s)"
+                                % (accuracy_threshold,))
+                            return
+                feed = {x: _X_train, y_: _Y_train, keep_prob: CNNTrainer.KEEP_PROB}
+                train_per_step.run(feed_dict=feed, session=sess)
+                summaries_result = sess.run(summaries, feed_dict=feed, )
+                summary_writer.add_summary(summaries_result, global_step=i)
+
+            summary_writer.close()
+
+    class Evaluator(object):
+
+        def __init__(self, accuracy, ):
+            super(CNNTrainer.Evaluator, self).__init__()
+            self.accuracy = accuracy
+
+        def evaluate(
+                self,
+                sess,
+                batch_size,
+                data, target_class_cnt,
+                x, y_, keep_prob,
+        ):
+            accuracy = self.accuracy
+
+            iteration = int(len(data) / batch_size) + 1
+            tmp_sum_accuracy = 0
+            for i in range(iteration):
+                batch_test = random_sample(data, batch_size)
+                _X, _Y = CNNTrainer.format_inputs(batch_test, target_class_cnt, )
+                tmp_sum_accuracy += accuracy.eval(feed_dict={x: _X, y_: _Y, keep_prob: 1.0}, session=sess)
+            final_accuracy = tmp_sum_accuracy / iteration
+            result = CNNTrainer.Evaluator.Result(final_accuracy)
+            return result
+
+        def evaluate_one(
+                self,
+                sess,
+                data, target_class_cnt,
+                x, y_, keep_prob,
+        ):
+            accuracy = self.accuracy
+
+            _X, _Y = CNNTrainer.format_inputs(data, target_class_cnt, )
+            test_accuracy = accuracy.eval(feed_dict={x: _X, y_: _Y, keep_prob: 1.0}, session=sess)
+            result = CNNTrainer.Evaluator.Result(test_accuracy)
+            return result
+
+        class Result(object):
+            def __init__(self, accuracy_ratio):
+                super(CNNTrainer.Evaluator.Result, self).__init__()
+                self.accuracy_ratio = accuracy_ratio
+
+            def __str__(self):
+                return "result {accuracy:%g}" % (self.accuracy_ratio,)
