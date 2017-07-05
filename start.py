@@ -1,4 +1,5 @@
 # coding=utf-8
+import logging
 import sys
 
 import conf
@@ -33,7 +34,7 @@ if __name__ == '__main__':
             1000, 20,
             'resource/little_data/model/cnn',
             'resource/little_data/summary/cnn',
-            6, 6,
+            4, 4,
             '32,64,128',
             2,
         ])
@@ -45,6 +46,7 @@ if __name__ == '__main__':
     #     generatedDataFilePaths,
     #     trainDataFilePaths=trainDataFilePaths, testDataFilePaths=testDataFilePaths,
     # ).allocate()
+    logging.info('argv: "%s"', ' '.join(argv))
     exit_code = CNNTrainer.fit(argv)
 
     sys.exit(exit_code)
