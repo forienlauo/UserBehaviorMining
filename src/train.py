@@ -304,17 +304,17 @@ where
 
                 out_ = y  # shape[_example_cnt, _out_width_]
 
-        # Train definition
-        with tf.name_scope('trainer') as _:
+        # Trainer
+        with tf.name_scope('Trainer') as _:
             loss = tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y), name='loss', )
             train_per_step = tf.train.AdamOptimizer(1e-5).minimize(loss, name='train_per_step', )
-            loss_summary = tf.summary.scalar('loss', loss)
+            tf.summary.scalar('loss', loss)
 
             trainer = CNNTrainer.Trainer(train_per_step)
 
-        # Evaluate definition
-        with tf.name_scope('evaluator') as _:
+        # Evaluator
+        with tf.name_scope('Evaluator') as _:
             example_cnt = tf.count_nonzero(
                 tf.logical_or(tf.cast(tf.argmax(y_, 1), dtype=tf.bool), True), name='example_cnt')  # 样本总数
 
