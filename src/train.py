@@ -317,7 +317,7 @@ where
         with tf.name_scope('evaluator') as _:
             correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accuracy', )
-            accuracy_summary = tf.summary.scalar('accuracy', accuracy)
+            tf.summary.scalar('accuracy', accuracy)
 
             # 该模型初步处理2种用户类型，正常、非正常用户，正常用户序号为0，异常用户序号为1
             # 关心异常用户的查全率、查准率
@@ -325,18 +325,22 @@ where
             _right_label = TARGET_LABEL_IDX
             _true_right = tf.equal(tf.argmax(y_, 1), _right_label)
             _predicted_right = tf.equal(tf.argmax(y, 1), _right_label)
-            _both_right = tf.logical_and(_true_right, _predicted_right)
-            _both_right_cnt = tf.reduce_sum(tf.cast(_both_right, dtype=tf.int32))
-            _true_right_cnt = tf.reduce_sum(tf.cast(_true_right, dtype=tf.int32))
-            _predicted_right_cnt = tf.reduce_sum(tf.cast(_predicted_right, dtype=tf.int32))
-            recall = -1.0 if _true_right_cnt == 0 else \
-                tf.divide(tf.to_float(_both_right_cnt), tf.to_float(_true_right_cnt), name='recall')
-            precision = -1.0 if _predicted_right_cnt == 0 else \
-                tf.divide(tf.to_float(_both_right_cnt), tf.to_float(_predicted_right_cnt), name='precision')
-            precision_summary = tf.summary.scalar('precision', precision)
-            recall_summary = tf.summary.scalar('recall', recall)
+            example_cnt = tf.count_nonzero(
+                tf.logical_or(tf.cast(tf.argmax(y, 1), dtype=tf.bool), True), name='example_cnt')
+            both_right_cnt = tf.count_nonzero(tf.logical_and(_true_right, _predicted_right), name='both_right_cnt')
+            true_right_cnt = tf.count_nonzero(_true_right, name='true_right_cnt')
+            predicted_right_cnt = tf.count_nonzero(_predicted_right, name='predicted_right_cnt')
+            recall = -1.0 if true_right_cnt == 0 else \
+                tf.divide(tf.to_float(both_right_cnt), tf.to_float(true_right_cnt), name='recall')
+            precision = -1.0 if predicted_right_cnt == 0 else \
+                tf.divide(tf.to_float(both_right_cnt), tf.to_float(predicted_right_cnt), name='precision')
+            tf.summary.scalar('recall', recall)
+            tf.summary.scalar('precision', precision)
 
-            evaluator = CNNTrainer.Evaluator(accuracy, recall, precision, )
+            evaluator = CNNTrainer.Evaluator(
+                accuracy, recall, precision,
+                example_cnt, both_right_cnt, true_right_cnt, predicted_right_cnt,
+            )
 
         return trainer, evaluator
 
@@ -510,11 +514,19 @@ where
 
     class Evaluator(object):
 
-        def __init__(self, accuracy, recall, precision, ):
+        def __init__(
+                self,
+                accuracy, recall, precision,
+                example_cnt, both_right_cnt, true_right_cnt, predicted_right_cnt,
+        ):
             super(CNNTrainer.Evaluator, self).__init__()
             self.accuracy = accuracy
             self.recall = recall
             self.precision = precision
+            self.example_cnt = example_cnt
+            self.both_right_cnt = both_right_cnt
+            self.true_right_cnt = true_right_cnt
+            self.predicted_right_cnt = predicted_right_cnt
 
         def evaluate(
                 self,
@@ -525,8 +537,10 @@ where
         ):
             iteration = int(len(data) / batch_size) + 1
             sum_accuracy = 0
-            sum_recall = 0
-            sum_precision = 0
+            sum_example_cnt = 0
+            sum_both_right_cnt = 0
+            sum_true_right_cnt = 0
+            sum_predicted_right_cnt = 0
             # FIXME 每个batch的实际size不严格相等,计算出来的准确率存在误差
             for i in range(iteration):
                 batch_test = random_sample(data, batch_size)
@@ -536,15 +550,19 @@ where
                     x, y_, keep_prob
                 )
                 sum_accuracy += _result.accuracy_ratio
-                sum_recall += _result.recall_ratio
-                sum_precision += _result.precision_ratio
+                sum_example_cnt += _result.example_cnt
+                sum_both_right_cnt += _result.both_right_cnt
+                sum_true_right_cnt += _result.true_right_cnt
+                sum_predicted_right_cnt += _result.predicted_right_cnt
             final_accuracy = sum_accuracy / iteration
-            # FIXME 小数据量时,final_recall 计算波动大
-            final_recall = sum_recall / iteration
-            # FIXME 小数据量时,final_precision 计算波动大
-            # FIXME final_precision 有时会返回 nan
-            final_precision = sum_precision / iteration
-            result = CNNTrainer.Evaluator.Result(final_accuracy, final_recall, final_precision, )
+            final_recall = -1.0 if sum_true_right_cnt == 0 else \
+                1.0 * sum_both_right_cnt / sum_true_right_cnt
+            final_precision = -1.0 if sum_predicted_right_cnt == 0 else \
+                1.0 * sum_both_right_cnt / sum_predicted_right_cnt
+            result = CNNTrainer.Evaluator.Result(
+                final_accuracy, final_recall, final_precision,
+                sum_example_cnt, sum_both_right_cnt, sum_true_right_cnt, sum_predicted_right_cnt,
+            )
             return result
 
         def evaluate_one(
@@ -553,25 +571,38 @@ where
                 data, target_class_cnt,
                 x, y_, keep_prob,
         ):
-            accuracy = self.accuracy
-            recall = self.recall
-            precision = self.precision
-
             _X, _Y = CNNTrainer.format_inputs(data, target_class_cnt, )
             feed_dict = {x: _X, y_: _Y, keep_prob: 1.0}
-            accuracy_ratio = accuracy.eval(feed_dict=feed_dict, session=sess)
-            recall_ratio = recall.eval(feed_dict=feed_dict, session=sess)
-            precision_ratio = precision.eval(feed_dict=feed_dict, session=sess)
-            result = CNNTrainer.Evaluator.Result(accuracy_ratio, recall_ratio, precision_ratio)
+            accuracy_ratio = self.accuracy.eval(feed_dict=feed_dict, session=sess)
+            recall_ratio = self.recall.eval(feed_dict=feed_dict, session=sess)
+            precision_ratio = self.precision.eval(feed_dict=feed_dict, session=sess)
+            example_cnt = self.example_cnt.eval(feed_dict=feed_dict, session=sess)
+            both_right_cnt = self.both_right_cnt.eval(feed_dict=feed_dict, session=sess)
+            true_right_cnt = self.true_right_cnt.eval(feed_dict=feed_dict, session=sess)
+            predicted_right_cnt = self.predicted_right_cnt.eval(feed_dict=feed_dict, session=sess)
+            result = CNNTrainer.Evaluator.Result(
+                accuracy_ratio, recall_ratio, precision_ratio,
+                example_cnt, both_right_cnt, true_right_cnt, predicted_right_cnt,
+            )
             return result
 
         class Result(object):
-            def __init__(self, accuracy_ratio, recall_ratio, precision_ratio):
+            def __init__(
+                    self,
+                    accuracy_ratio, recall_ratio, precision_ratio,
+                    example_cnt, both_right_cnt, true_right_cnt, predicted_right_cnt,
+            ):
                 super(CNNTrainer.Evaluator.Result, self).__init__()
                 self.accuracy_ratio = accuracy_ratio
                 self.recall_ratio = recall_ratio
                 self.precision_ratio = precision_ratio
+                self.example_cnt = example_cnt
+                self.both_right_cnt = both_right_cnt
+                self.true_right_cnt = true_right_cnt
+                self.predicted_right_cnt = predicted_right_cnt
 
             def __str__(self):
-                return "result {accuracy: %g, recall: %g, precision: %g}" \
-                       % (self.accuracy_ratio, self.recall_ratio, self.precision_ratio,)
+                return "result {accuracy: %g, recall: %g, precision: %g, " \
+                       "example_cnt: %g, both_right_cnt: %g, true_right_cnt: %g, predicted_right_cnt: %g}" \
+                       % (self.accuracy_ratio, self.recall_ratio, self.precision_ratio,
+                          self.example_cnt, self.both_right_cnt, self.true_right_cnt, self.predicted_right_cnt,)

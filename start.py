@@ -24,7 +24,7 @@ if __name__ == '__main__':
             # 'tmp/model_persistence/cnn_test.model',
             # 'tmp/model_visualization/cnn_test.model',
             # 5, 5,
-            # '32,64,128',
+            # '16,32,64',
             # 2,
             # little data
             ',',
@@ -35,7 +35,7 @@ if __name__ == '__main__':
             'resource/little_data/model/cnn',
             'resource/little_data/summary/cnn',
             4, 4,
-            '32,64,128',
+            '64,128,192',
             2,
         ])
     argv = map(lambda x: str(x), sys.argv)
