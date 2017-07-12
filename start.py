@@ -30,7 +30,7 @@ if __name__ == '__main__':
             ',',
             trainDataFilePaths[0], trainDataFilePaths[1],
             testDataFilePaths[0], testDataFilePaths[1],
-            60, 36, 1, 2,
+            60, 88, 1, 2,
             1000, 20,
             'resource/little_data/model/cnn',
             'resource/little_data/summary/cnn',
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     conf.init()
 
     # ExampleAllocator(
-    #     generatedDataFilePaths,
+    #     wholeDataFilePaths=generatedDataFilePaths,
     #     trainDataFilePaths=trainDataFilePaths, testDataFilePaths=testDataFilePaths,
     # ).allocate()
     logging.info('argv: "%s"', ' '.join(argv))
