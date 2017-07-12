@@ -431,16 +431,28 @@ where
             x = graph.get_tensor_by_name("input/x:0")
             y_ = graph.get_tensor_by_name("input/y_:0")
             keep_prob = graph.get_tensor_by_name("input/keep_prob:0")
+
             accuracy = graph.get_tensor_by_name("evaluator/accuracy:0")
             recall = graph.get_tensor_by_name("evaluator/recall:0")
             precision = graph.get_tensor_by_name("evaluator/precision:0")
+
+            example_cnt = graph.get_tensor_by_name("evaluator/example_cnt:0")
+            correct_cnt = graph.get_tensor_by_name("evaluator/correct_cnt:0")
+            both_right_cnt = graph.get_tensor_by_name("evaluator/both_right_cnt:0")
+            true_right_cnt = graph.get_tensor_by_name("evaluator/true_right_cnt:0")
+            predicted_right_cnt = graph.get_tensor_by_name("evaluator/predicted_right_cnt:0")
+
             logging.info("load model from: %s" % model_file_path)
 
             # evaluate
             logging.info("start to evaluate.")
             start_time = time.time()
             test_data_len = len(test_data)
-            evaluator = CNNTrainer.Evaluator(accuracy, recall, precision, )
+            evaluator = CNNTrainer.Evaluator(
+                accuracy, recall, precision,
+                example_cnt, correct_cnt, both_right_cnt,
+                true_right_cnt, predicted_right_cnt,
+            )
             evaluate_result = evaluator.evaluate(
                 sess,
                 batch_size,
