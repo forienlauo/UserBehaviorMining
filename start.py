@@ -8,12 +8,13 @@ from src.util.example_utils import ExampleAllocator
 
 if __name__ == '__main__':
     if len(sys.argv) <= 1:
-        generatedDataFilePaths = ('resource/little_data/data/data_x.txt',
-                                  'resource/little_data/data/data_y.txt',)
-        trainDataFilePaths = ('resource/little_data/data/train_data_x.txt',
-                              'resource/little_data/data/train_data_y.txt',)
-        testDataFilePaths = ('resource/little_data/data/test_data_x.txt',
-                             'resource/little_data/data/test_data_y.txt',)
+        _data_root_dir = 'resource/little_data'
+        generatedDataFilePaths = (('%s/data/data_x.txt' % _data_root_dir),
+                                  ('%s/data/data_y.txt' % _data_root_dir),)
+        trainDataFilePaths = (('%s/data/train_data_x.txt' % _data_root_dir),
+                              ('%s/data/train_data_y.txt' % _data_root_dir),)
+        testDataFilePaths = (('%s/data/test_data_x.txt' % _data_root_dir),
+                             ('%s/data/test_data_y.txt' % _data_root_dir),)
         sys.argv.extend([
             # # test
             # '\t',
@@ -32,8 +33,8 @@ if __name__ == '__main__':
             testDataFilePaths[0], testDataFilePaths[1],
             60, 88, 1, 2,
             1000, 20,
-            'resource/little_data/model/cnn',
-            'resource/little_data/summary/cnn',
+            ('%s/model/cnn' % _data_root_dir),
+            ('%s/summary/cnn' % _data_root_dir),
             4, 4,
             '64,128,192',
             2,
