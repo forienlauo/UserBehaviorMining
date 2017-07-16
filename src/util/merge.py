@@ -8,9 +8,15 @@ import os
 import pandas as pd
 import numpy as np
 import random
+import pickle
 import sklearn.preprocessing
 from scipy import misc
+from enum import Enum, unique
 
+@unique
+class DataType(Enum):
+    NORMAL = 'normal'
+    FRAUD = 'fraud'
 
 class UserBehaviorFeatures():
     """
@@ -23,6 +29,8 @@ class UserBehaviorFeatures():
         self.sampling_hour = [(7, 12), (12, 17), (17, 22)]  # 每天采样的时间段，单位为小时
         self.dump_path = '../../resource/merge/'
         self.columns_name = []
+        self.fraud_info_dict = pickle.load(open('../../resource/little_data/filtered/info/include/fraud_dict.pkl'))
+        self.normal_info_dict = pickle.load(open('../../resource/little_data/filtered/info/include/normal_dict.pkl'))
 
     def extrace_and_process(self, file_path, data_type):
         """
@@ -47,7 +55,7 @@ class UserBehaviorFeatures():
             train_x, train_y = self.after_merge(feature_dict, data_type)
 
             print("extracing finished")
-        train_x = pd.DataFrame(train_x.reshape(-1, 60 * 36))
+        train_x = pd.DataFrame(train_x.reshape(-1, 60 * 88))
         train_y = pd.DataFrame(train_y.reshape(-1, 2))
         train_x.to_csv(self.dump_path + basename + '_train_x.txt', index=False, header=False, sep=',')
         train_y.to_csv(self.dump_path + basename + '_train_y.txt', index=False, header=False, sep=',')
@@ -68,6 +76,7 @@ class UserBehaviorFeatures():
             data = pd.read_csv(path, sep='|')
         else:
             print '########## wrong. ##########'
+
         return data
 
     def before_merge(self, data):
@@ -114,6 +123,7 @@ class UserBehaviorFeatures():
             # 把行补全为60行
             index = pd.DataFrame({'index': pd.Series(range(60), index=range(60))})
             dataframe = pd.merge(index, dataframe, left_index=True, right_index=True, how='left')
+
             dataframe.drop(['index'], axis=1, inplace=True)
 
             # 补全缺失值
@@ -125,46 +135,52 @@ class UserBehaviorFeatures():
                 continue
             dataframe.fillna(0, inplace=True)
 
+            #merge用户信息
+            from_num = key.strip().split('_')[0]
+            if data_type == DataType.FRAUD.value:
+                if(self.fraud_info_dict.has_key(from_num)):
+                    info = self.fraud_info_dict[from_num]
+                else:
+                    continue
+            else:
+                if(self.normal_info_dict.has_key(from_num)):
+                    info = self.normal_info_dict[from_num]
+                else:
+                    continue
+
+            info_dict = {}
+            for (k, val) in dict(info).items():
+                info_dict[k] = pd.Series(60 * [val])
+            info_df = pd.DataFrame(info_dict)
+            dataframe = pd.merge(dataframe, info_df, left_index=True, right_index=True)
+            dataframe.drop(['from_num', 'is_include'], axis=1, inplace=True)
+
             columes_list = list(dataframe.columns)
             # 由于列数较少，所以打乱顺序复制
-            # if len(self.columns_name) == 0:
-            #     for i in range(4):
-            #         random.shuffle(columes_list)
-            #         self.columns_name.extend(columes_list)
-            #     print columes_list, self.columns_name
+            if len(self.columns_name) == 0:
+                for i in range(7):
+                    random.shuffle(columes_list)
+                    self.columns_name.extend(columes_list)
+                print columes_list, self.columns_name
             # 列序固定
-            self.columns_name = ['fe_all_call_count_count', 'fe_cost_mean', 'fe_cost_std', 'fe_duration_mean',
-                                 'fe_duration_std',
-                                 'fe_type_median',
-                                 'fe_all_call_count_count', 'fe_duration_std', 'fe_duration_mean', 'fe_cost_std',
-                                 'fe_cost_mean',
-                                 'fe_type_median',
-                                 'fe_all_call_count_count', 'fe_duration_std', 'fe_cost_std', 'fe_duration_mean',
-                                 'fe_cost_mean',
-                                 'fe_type_median',
-                                 'fe_all_call_count_count', 'fe_type_median', 'fe_cost_std', 'fe_duration_mean',
-                                 'fe_cost_mean',
-                                 'fe_duration_std',
-                                 'fe_duration_std', 'fe_all_call_count_count', 'fe_type_median', 'fe_duration_mean',
-                                 'fe_cost_std',
-                                 'fe_cost_mean']
+            self.columns_name = ['fe_type_median', 'open_tate', 'sub_stattp', 'fe_all_call_count_count', 'fe_cost_mean', 'user_type', 'fe_cost_std', 'fe_duration_std', 'fe_duration_mean', 'is_realname', 'sell_product', 'is_realname', 'fe_all_call_count_count', 'fe_duration_mean', 'sell_product', 'sub_stattp', 'fe_type_median', 'open_tate', 'fe_cost_mean', 'fe_cost_std', 'fe_duration_std', 'user_type', 'sub_stattp', 'fe_cost_mean', 'fe_duration_std', 'fe_type_median', 'fe_duration_mean', 'sell_product', 'fe_all_call_count_count', 'fe_cost_std', 'user_type', 'is_realname', 'open_tate', 'is_realname', 'user_type', 'fe_cost_mean', 'sub_stattp', 'fe_type_median', 'fe_all_call_count_count', 'fe_cost_std', 'fe_duration_mean', 'sell_product', 'open_tate', 'fe_duration_std', 'fe_duration_std', 'sub_stattp', 'open_tate', 'user_type', 'sell_product', 'is_realname', 'fe_cost_mean', 'fe_duration_mean', 'fe_type_median', 'fe_cost_std', 'fe_all_call_count_count', 'user_type', 'fe_cost_mean', 'fe_duration_std', 'fe_duration_mean', 'fe_all_call_count_count', 'sell_product', 'fe_type_median', 'is_realname', 'fe_cost_std', 'open_tate', 'sub_stattp', 'fe_type_median', 'fe_cost_std', 'sub_stattp', 'fe_duration_std', 'is_realname', 'fe_cost_mean', 'user_type', 'fe_duration_mean', 'fe_all_call_count_count', 'sell_product', 'open_tate']
 
             for i, name in enumerate(self.columns_name):
                 dataframe.insert(0, '%s_%s' % (name, i), dataframe[name])
+
             # 对列归一化
             data_arr = min_max_scaler.fit_transform(dataframe)
 
-            train_x_list.append(misc.imresize(data_arr, (60, 36)))  # 图片转成64X64
+            train_x_list.append(misc.imresize(data_arr.reshape(60, 88), 1.0))  # 图片转成64X88
 
-        train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(pic_num, 60, 36)
-        # train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(pic_num, 64, 64)
+        train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(len(train_x_list), 60, 88)
 
         # 对train_y处理
         train_y_list = []
-        train_y_res = [0, 1] if data_type == 'fraud_user' else [1, 0]
-        for i in range(pic_num):
+        train_y_res = [0, 1] if data_type == DataType.FRAUD.value else [1, 0]
+        for i in range(len(train_x_list)):
             train_y_list.append(train_y_res)
-        train_y = np.asarray(train_y_list, dtype=np.uint8).reshape(pic_num, 2)
+        train_y = np.asarray(train_y_list, dtype=np.uint8).reshape(len(train_x_list), 2)
 
         return train_x, train_y
 
@@ -203,7 +219,7 @@ class UserBehaviorFeatures():
 
 if __name__ == '__main__':
     users = UserBehaviorFeatures()
-    train_x, train_y = users.extrace_and_process(
-        '../../resource/little_data/filtered/include/fraud_user_0_sample.txt', 'fraud_user')
-    train_x, train_y = users.extrace_and_process(
-        '../../resource/little_data/filtered/include/normal_user_19.txt', 'normal_user')
+    train_x, train_y = users.extrace_and_process('../../resource/little_data/filtered/record/include/fraud_user_0_sample.txt', DataType.FRAUD.value)
+    train_x, train_y = users.extrace_and_process('../../resource/little_data/filtered/record/include/normal_user_0.txt', DataType.NORMAL.value)
+
+
