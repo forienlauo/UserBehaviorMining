@@ -560,7 +560,6 @@ where
             sum_correct_cnt = 0
             sum_true_right_cnt = 0
             sum_predicted_right_cnt = 0
-            # FIXME 每个batch的实际size不严格相等,计算出来的准确率存在误差
             for i in range(iteration):
                 batch_test = random_sample(data, batch_size)
                 _result = self.evaluate_one(
