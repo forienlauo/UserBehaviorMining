@@ -34,7 +34,7 @@ need args:
     <neurons_nums>
     [cpu_core_num]
 where
-    neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 2 conv layers)
+    neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 3 conv layers)
 """)
 
     @staticmethod
@@ -56,7 +56,7 @@ where
                             <neurons_nums>
                             [cpu_core_num]
                         where
-                            neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 2 conv layers)
+                            neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 3 conv layers)
         """
         if len(argv[1:]) < 16:
             CNNTrainer.print_usage()
@@ -304,17 +304,17 @@ where
 
                 out_ = y  # shape[_example_cnt, _out_width_]
 
-        # Train definition
-        with tf.name_scope('trainer') as _:
+        # Trainer
+        with tf.name_scope('Trainer') as _:
             loss = tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y), name='loss', )
             train_per_step = tf.train.AdamOptimizer(1e-5).minimize(loss, name='train_per_step', )
-            loss_summary = tf.summary.scalar('loss', loss)
+            tf.summary.scalar('loss', loss)
 
             trainer = CNNTrainer.Trainer(train_per_step)
 
-        # Evaluate definition
-        with tf.name_scope('evaluator') as _:
+        # Evaluator
+        with tf.name_scope('Evaluator') as _:
             example_cnt = tf.count_nonzero(
                 tf.logical_or(tf.cast(tf.argmax(y_, 1), dtype=tf.bool), True), name='example_cnt')  # 样本总数
 
@@ -560,7 +560,6 @@ where
             sum_correct_cnt = 0
             sum_true_right_cnt = 0
             sum_predicted_right_cnt = 0
-            # FIXME 每个batch的实际size不严格相等,计算出来的准确率存在误差
             for i in range(iteration):
                 batch_test = random_sample(data, batch_size)
                 _result = self.evaluate_one(
