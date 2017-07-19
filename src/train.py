@@ -42,29 +42,28 @@ where
         """支持训练并评估 baseline 级别的输入为任意<height, width, in_channels, target_class_cnt> 的 cnn 模型
         cnn的样本格式: 每行样本是一张拉成1维的图片(height*weight*in_channels), 外加 one_hot形式的标签(长度为 target_class_cnt )
             即,每行共有 height*weight*in_channels + target_class_cnt 列
-        @:param argv list,
-                    argv[0]: 启动文件名;
-                    argv[1:]为:
-                        need args:
-                            <delimiter>
-                            <train_data_x_file_path> <train_data_y_file_path> <test_data_x_file_path> <test_data_y_file_path>
-                            <initial_height> <initial_width> <initial_channels> <target_class_cnt>
-                            <iteration> <batch_size>
-                            <model_file_path>
-                            <summary_log_dir_path>
-                            <conv_height> <conv_width>
-                            <neurons_nums>
-                            [cpu_core_num]
-                        where
-                            neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 3 conv layers)
+        @:param argv list, as:
+                    need args:
+                        <delimiter>
+                        <train_data_x_file_path> <train_data_y_file_path> <test_data_x_file_path> <test_data_y_file_path>
+                        <initial_height> <initial_width> <initial_channels> <target_class_cnt>
+                        <iteration> <batch_size>
+                        <model_file_path>
+                        <summary_log_dir_path>
+                        <conv_height> <conv_width>
+                        <neurons_nums>
+                        [cpu_core_num]
+                    where
+                        neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 3 conv layers)
         """
-        if len(argv[1:]) < 16:
+        if len(argv) < 16:
             CNNTrainer.print_usage()
             return 1
+        logging.info('argv: "%s"', ' '.join(argv))
 
         # argv
         # required
-        _offset, _length = 1, 1
+        _offset, _length = 0, 1
         delimiter, = argv[_offset:_offset + _length]
         _offset, _length = _offset + _length, 4
         train_data_x_file_path, train_data_y_file_path, test_data_x_file_path, test_data_y_file_path = \
