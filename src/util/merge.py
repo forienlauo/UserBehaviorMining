@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 import sys
 
-sys.path.append('../../')
+sys.path.append('.')
 
 import os
 import pandas as pd
@@ -27,10 +27,10 @@ class UserBehaviorFeatures():
         self.interval = 5  # 5分钟为采样间隔
         self.sampling_month = 3  # 只取三月数据
         self.sampling_hour = [(7, 12), (12, 17), (17, 22)]  # 每天采样的时间段，单位为小时
-        self.dump_path = '../../resource/merge/'
+        self.dump_path = 'resource/little_data/merge/'
         self.columns_name = []
-        self.fraud_info_dict = pickle.load(open('../../resource/little_data/filtered/info/include/fraud_dict.pkl'))
-        self.normal_info_dict = pickle.load(open('../../resource/little_data/filtered/info/include/normal_dict.pkl'))
+        self.fraud_info_dict = pickle.load(open('resource/little_data/filtered/info/include/fraud_dict.pkl'))
+        self.normal_info_dict = pickle.load(open('resource/little_data/filtered/info/include/normal_dict.pkl'))
 
     def extrace_and_process(self, file_path, data_type):
         """
@@ -169,9 +169,9 @@ class UserBehaviorFeatures():
                 dataframe.insert(0, '%s_%s' % (name, i), dataframe[name])
 
             # 对列归一化
-            data_arr = min_max_scaler.fit_transform(dataframe)
+            #data_arr = min_max_scaler.fit_transform(dataframe)
 
-            train_x_list.append(misc.imresize(data_arr.reshape(60, 88), 1.0))  # 图片转成64X88
+            train_x_list.append(misc.imresize(dataframe.reshape(60, 88), 1.0))  # 图片转成64X88
 
         train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(len(train_x_list), 60, 88)
 
