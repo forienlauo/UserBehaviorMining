@@ -34,7 +34,7 @@ need args:
     <neurons_nums>
     [cpu_core_num]
 where
-    neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 2 conv layers)
+    neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 3 conv layers)
 """)
 
     @staticmethod
@@ -56,7 +56,7 @@ where
                             <neurons_nums>
                             [cpu_core_num]
                         where
-                            neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 2 conv layers)
+                            neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 3 conv layers)
         """
         if len(argv[1:]) < 16:
             CNNTrainer.print_usage()
