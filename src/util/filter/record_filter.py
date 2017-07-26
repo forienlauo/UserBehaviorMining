@@ -12,7 +12,7 @@ import conf
 
 SEPARATOR = '|'
 FEATURE_NUM = 11
-PARTITION_COUNT = 20
+PARTITION_COUNT = 4
 
 columns_dict = dict(
     from_num=[0, int],
@@ -86,7 +86,7 @@ def __makepath(basename, clude_type):
     :param clude_type:    数据类型(干净的数据、 滤掉的数据)
     :return:
     """
-    return os.path.join(conf.ROOT_DIR, "resource/filtered/%s" % (clude_type), basename)
+    return os.path.join(conf.ROOT_DIR, "resource/little_data/filtered/record/%s" % (clude_type), basename)
 
 
 def partition_hash(line):
@@ -159,5 +159,6 @@ def check_data_line(line):
 
 
 if __name__ == '__main__':
-    partitionProcess('../../resource/raw/fraud_user', 'fraud_user')
-    partitionProcess('../../resource/raw/normal_user', 'normal_user')
+    partitionProcess('../../../resource/little_data/raw/test_user', 'user')
+    #partitionProcess('../../../resource/little_data/raw/normal_user', 'normal_user')
+    #partitionProcess('../../../resource/little_data/raw/fraud_user', 'fraud_user')
