@@ -16,6 +16,7 @@ sys.path.append('../../')
 class DataType(Enum):
     NORMAL = 'normal'
     FRAUD = 'fraud'
+    TEST = 'test'
 
 columns_dict = {
     u'主叫':'from_num',
@@ -104,7 +105,7 @@ def check_data(user_info_df, data_type):
             return sell_product_dict[u'其他']
         else:
             return np.nan
-    def fun_include(row):
+    def do_clean_train(row, data_type):
         row = row.values.astype(str)
         for item in row:
             if len(item) == 0 or item == 'nan' or item == '\N':
@@ -120,7 +121,7 @@ def check_data(user_info_df, data_type):
 
     user_info_df['user_type'] = user_info_df['user_type'].apply(lambda type: type_dict[type] if type_dict.has_key(type) else np.nan)
 
-    if(data_type == DataType.NORMAL.value):
+    if(data_type == DataType.NORMAL.value or data_type == DataType.TEST.value):
         user_info_df['open_tate'] = user_info_df['open_tate'].apply(parse_time_normal)
     else:
         user_info_df['open_tate'] = user_info_df['open_tate'].apply(parse_time_fraud)
@@ -131,13 +132,16 @@ def check_data(user_info_df, data_type):
 
     user_info_df['sell_product'] = user_info_df['sell_product'].apply(parse_sell_product)
 
-    user_info_df['is_include'] = user_info_df.apply(fun_include, axis=1)
-
-    user_info_df = user_info_df.drop_duplicates('from_num')
+    if(data_type == DataType.TEST.value):
+        user_info_df = user_info_df.fillna(0)
+        user_info_df['is_include'] = True
+    else:
+        user_info_df['is_include'] = user_info_df.apply(do_clean_train, axis=1)
 
     user_info_df_include = user_info_df[user_info_df.is_include == True]
-
     user_info_df_exclude = user_info_df[user_info_df.is_include == False]
+
+    user_info_df_include = user_info_df_include.drop_duplicates('from_num')
 
     user_info_dict = trans_dict(user_info_df_include)
 
@@ -153,4 +157,4 @@ def trans_dict(user_info_df_include):
 
 if __name__ == '__main__':
     #filterProcess('/Users/mayuchen/Documents/Python/Repository/DL/UserBehaviorMining/resource/little_data/raw/info/list360诈骗电话-0512_md5.xlsx', DataType.FRAUD.value)
-    filterProcess('/Users/mayuchen/Documents/Python/Repository/DL/UserBehaviorMining/resource/little_data/raw/info/普通用户号码_md5.xlsx', DataType.NORMAL.value)
+    filterProcess('/Users/mayuchen/Documents/Python/Repository/DL/UserBehaviorMining/resource/little_data/raw/info/号码清单1_md5.xlsx', DataType.TEST.value)

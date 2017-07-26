@@ -2,21 +2,20 @@
 # -*- coding: UTF-8 -*-
 import sys
 
-sys.path.append('.')
-
 import os
 import pandas as pd
 import numpy as np
 import random
 import pickle
-import sklearn.preprocessing
 from scipy import misc
 from enum import Enum, unique
+import sklearn.preprocessing
 
 @unique
 class DataType(Enum):
     NORMAL = 'normal'
     FRAUD = 'fraud'
+    TEST = 'test'
 
 class UserBehaviorFeatures():
     """
@@ -25,12 +24,13 @@ class UserBehaviorFeatures():
 
     def __init__(self):
         self.interval = 5  # 5分钟为采样间隔
-        self.sampling_month = 3  # 只取三月数据
+        self.sampling_month = (3, 5)                        #采样月份
         self.sampling_hour = [(7, 12), (12, 17), (17, 22)]  # 每天采样的时间段，单位为小时
-        self.dump_path = 'resource/little_data/merge/'
+        self.dump_path = '../../resource/little_data/merge/'
         self.columns_name = []
-        self.fraud_info_dict = pickle.load(open('resource/little_data/filtered/info/include/fraud_dict.pkl'))
-        self.normal_info_dict = pickle.load(open('resource/little_data/filtered/info/include/normal_dict.pkl'))
+        #self.fraud_info_dict = pickle.load(open('resource/little_data/filtered/info/include/fraud_dict.pkl'))
+        #self.normal_info_dict = pickle.load(open('resource/little_data/filtered/info/include/normal_dict.pkl'))
+        self.test_info_dict = pickle.load(open('../../resource/little_data/filtered/info/include/test_dict.pkl'))
 
     def extrace_and_process(self, file_path, data_type):
         """
@@ -52,14 +52,21 @@ class UserBehaviorFeatures():
                 for funs in (i for i in dir(self) if i[:3] == 'fe_'):
                     feature.append(pd.DataFrame(getattr(self, funs)(dataframe, funs)))
                 feature_dict[key] = pd.concat(feature, axis=1)
-            train_x, train_y = self.after_merge(feature_dict, data_type)
+        print("extracing finished")
 
-            print("extracing finished")
-        train_x = pd.DataFrame(train_x.reshape(-1, 60 * 88))
-        train_y = pd.DataFrame(train_y.reshape(-1, 2))
-        train_x.to_csv(self.dump_path + basename + '_train_x.txt', index=False, header=False, sep=',')
-        train_y.to_csv(self.dump_path + basename + '_train_y.txt', index=False, header=False, sep=',')
-        return train_x, train_y
+        if not data_type == DataType.TEST.value:
+            train_x, train_y = self.after_merge(feature_dict, data_type)
+            train_x = pd.DataFrame(train_x.reshape(-1, 60 * 88))
+            train_y = pd.DataFrame(train_y.reshape(-1, 2))
+            train_x.to_csv(self.dump_path + basename + '_train_x.txt', index=False, header=False, sep=',')
+            train_y.to_csv(self.dump_path + basename + '_train_y.txt', index=False, header=False, sep=',')
+            return train_x, train_y
+        else:
+            test_dict = self.after_merge(feature_dict, data_type)
+            for from_num in test_dict:
+                test_x = pd.DataFrame(test_dict[from_num].reshape(-1, 60 * 88))
+                test_x.to_csv(self.dump_path + 'test/' + from_num + '.txt', index=False, header=False, sep=',')
+            return train_x, train_y
 
     def get_data(self, path):
         data = None
@@ -91,31 +98,32 @@ class UserBehaviorFeatures():
         type_map = {'cvoi': 0, 'local': 1, 'distance': 2}
         data['type'] = data['type'].apply(lambda x: type_map[x])
 
-        data = data[data.month == self.sampling_month]
-
         data_dict = {}
+        sampling_month = self.sampling_month
         for fromnum in set(data.from_num):
             print fromnum
-            for day_ind in range(1, 32):
-                for window_ind in range(3):
-                    key = '%s_%s_%s' % (fromnum, day_ind, window_ind)
-                    data_tmp = data[(data.from_num == fromnum) & (data.day == day_ind)]
-                    data_tmp = data_tmp[(data_tmp.hour >= self.sampling_hour[window_ind][0]) & (
-                        data_tmp.hour < self.sampling_hour[window_ind][1])]
-                    if not data_tmp.empty:
-                        data_dict[key] = data_tmp
-                    data_tmp['window_ind'] = window_ind
-                    data_tmp['interval_in_window'] = (((data_tmp.hour - self.sampling_hour[window_ind][
-                        0]) * 60 + data_tmp.minute) / self.interval).astype(int)
+            for month_ind in range(sampling_month[0], sampling_month[1]):
+                for day_ind in range(1, 32):
+                    for window_ind in range(3):
+                        key = '%s_%s_%s_%s' % (fromnum, month_ind, day_ind, window_ind)
+                        data_tmp = data[(data.from_num == fromnum) & (data.month == month_ind) & (data.day == day_ind)]
+                        data_tmp = data_tmp[(data_tmp.hour >= self.sampling_hour[window_ind][0]) & (
+                            data_tmp.hour < self.sampling_hour[window_ind][1])]
+                        if not data_tmp.empty:
+                            data_dict[key] = data_tmp
+                        data_tmp['window_ind'] = window_ind
+                        data_tmp['interval_in_window'] = (((data_tmp.hour - self.sampling_hour[window_ind][
+                            0]) * 60 + data_tmp.minute) / self.interval).astype(int)
 
         return data_dict
 
     def after_merge(self, feature_dict, data_type):
         # 图片数量
-        pic_num = len(feature_dict.keys())
+        #pic_num = len(feature_dict.keys())
 
         # 对train_x处理
         min_max_scaler = sklearn.preprocessing.MinMaxScaler()
+        test_res_dict = {}
         train_x_list = []
         for key, dataframe in feature_dict.items():
             dataframe = feature_dict[key]
@@ -142,9 +150,14 @@ class UserBehaviorFeatures():
                     info = self.fraud_info_dict[from_num]
                 else:
                     continue
-            else:
+            elif data_type == DataType.NORMAL.value:
                 if(self.normal_info_dict.has_key(from_num)):
                     info = self.normal_info_dict[from_num]
+                else:
+                    continue
+            elif data_type == DataType.TEST.value:
+                if (self.test_info_dict.has_key(from_num)):
+                    info = self.test_info_dict[from_num]
                 else:
                     continue
 
@@ -153,6 +166,7 @@ class UserBehaviorFeatures():
                 info_dict[k] = pd.Series(60 * [val])
             info_df = pd.DataFrame(info_dict)
             dataframe = pd.merge(dataframe, info_df, left_index=True, right_index=True)
+
             dataframe.drop(['from_num', 'is_include'], axis=1, inplace=True)
 
             columes_list = list(dataframe.columns)
@@ -169,20 +183,30 @@ class UserBehaviorFeatures():
                 dataframe.insert(0, '%s_%s' % (name, i), dataframe[name])
 
             # 对列归一化
-            #data_arr = min_max_scaler.fit_transform(dataframe)
+            data_arr = min_max_scaler.fit_transform(dataframe)
 
-            train_x_list.append(misc.imresize(dataframe.reshape(60, 88), 1.0))  # 图片转成64X88
+            data_pic = misc.imresize(data_arr.reshape(60, 88), 1.0)
 
-        train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(len(train_x_list), 60, 88)
+            if not data_type == DataType.TEST.value:
+                train_x_list.append(data_pic)  # 图片转成64X88
+            else:
+                if not test_res_dict.has_key(from_num):
+                    test_res_dict[from_num] = data_pic
+                else:
+                    test_res_dict[from_num] = np.append(test_res_dict[from_num], data_pic)
 
         # 对train_y处理
-        train_y_list = []
-        train_y_res = [0, 1] if data_type == DataType.FRAUD.value else [1, 0]
-        for i in range(len(train_x_list)):
-            train_y_list.append(train_y_res)
-        train_y = np.asarray(train_y_list, dtype=np.uint8).reshape(len(train_x_list), 2)
+        if not data_type == DataType.TEST.value:
+            train_x = np.asarray(train_x_list, dtype=np.uint8).reshape(len(train_x_list), 60, 88)
+            train_y_list = []
+            train_y_res = [0, 1] if data_type == DataType.FRAUD.value else [1, 0]
+            for i in range(len(train_x_list)):
+                train_y_list.append(train_y_res)
+            train_y = np.asarray(train_y_list, dtype=np.uint8).reshape(len(train_x_list), 2)
 
-        return train_x, train_y
+            return train_x, train_y
+        else:
+            return test_res_dict
 
     def fe_all_call_count(self, dataframe, feature_prefix):
         feature_dic = {}
@@ -219,7 +243,8 @@ class UserBehaviorFeatures():
 
 if __name__ == '__main__':
     users = UserBehaviorFeatures()
-    train_x, train_y = users.extrace_and_process('../../resource/little_data/filtered/record/include/fraud_user_0_sample.txt', DataType.FRAUD.value)
-    train_x, train_y = users.extrace_and_process('../../resource/little_data/filtered/record/include/normal_user_0.txt', DataType.NORMAL.value)
+    #train_x, train_y = users.extrace_and_process('../../resource/little_data/filtered/record/include/fraud_user_0_sample.txt', DataType.FRAUD.value)
+    #train_x, train_y = users.extrace_and_process('../../resource/little_data/filtered/record/include/normal_user_0.txt', DataType.NORMAL.value)
+    users.extrace_and_process('../../resource/little_data/filtered/record/include/user_1.txt', DataType.TEST.value)
 
 
