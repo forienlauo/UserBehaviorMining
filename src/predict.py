@@ -23,7 +23,12 @@ need args:
 
     @staticmethod
     def fit(argv):
-        # 20170726, niuqiang, TODO 添加doc
+        """批量预测指定用户的标签
+        data_x_dir_path: 存储待预测样本的目录. 目录中每个文件中存有一个用户对应的所有图片, 文件名是 <uid>.*, 文件中每行一个样本(x)
+        样本格式(x): 每行样本是一张拉成1维的图片(<height, weight, in_channels>同训练数据)
+        标签格式(y): 每行标签是一个整数, 表示标签号(不再是 one_hot 形式的向量(<target_class_cnt>同训练数据))
+        @:param argv list, 详见 print_usage() 方法
+        """
         if len(argv) < 4:
             CNNPredictor.print_usage()
             return 1

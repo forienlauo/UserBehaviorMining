@@ -40,22 +40,10 @@ where
 
     @staticmethod
     def fit(argv):
-        """支持训练并评估 baseline 级别的输入为任意<height, width, in_channels, target_class_cnt> 的 cnn 模型
-        cnn的样本格式: 每行样本是一张拉成1维的图片(height*weight*in_channels), 外加 one_hot形式的标签(长度为 target_class_cnt )
-            即,每行共有 height*weight*in_channels + target_class_cnt 列
-        @:param argv list, as:
-                    need args:
-                        <delimiter>
-                        <train_data_x_file_path> <train_data_y_file_path> <test_data_x_file_path> <test_data_y_file_path>
-                        <initial_height> <initial_width> <initial_channels> <target_class_cnt>
-                        <iteration> <batch_size>
-                        <model_file_path>
-                        <summary_log_dir_path>
-                        <conv_height> <conv_width>
-                        <neurons_nums>
-                        [cpu_core_num]
-                    where
-                        neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 3 conv layers)
+        """训练并评估 cnn 模型
+        样本格式(x): 每行样本是一张拉成1维的图片(height*weight*in_channels)
+        标签格式(y): 每行标签是一个 one_hot 形式的向量(长度为 target_class_cnt )
+        @:param argv list, 详见 print_usage() 方法
         """
         if len(argv) < 16:
             CNNTrainer.print_usage()
