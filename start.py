@@ -2,6 +2,7 @@
 import sys
 
 import conf
+from src.predict import CNNPredictor
 from src.train import CNNTrainer
 
 
@@ -10,7 +11,7 @@ def print_usage():
 need args:
     <module_name> [module_argv]
 where
-    module_name is <prepare|train>
+    module_name is <prepare|train|predict>
     module_argv depends on concrete module
 """)
 
@@ -30,6 +31,8 @@ if __name__ == '__main__':
         pass
     elif module_name == 'train':
         exit_code = CNNTrainer.fit(module_argv)
+    elif module_name == 'predict':
+        exit_code = CNNPredictor.fit(module_argv)
     else:
         print_usage()
         exit_code = 1
