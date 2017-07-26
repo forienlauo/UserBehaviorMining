@@ -23,7 +23,7 @@ if __name__ == '__main__':
     conf.init()
 
     module_name = sys.argv[1]
-    module_argv = sys.argv[1:]
+    module_argv = sys.argv[2:]
     exit_code = 0
     if module_name == 'prepare':
         # 2017/07/19,niuqiang TODO call module prepare
