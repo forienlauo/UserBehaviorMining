@@ -143,4 +143,4 @@ need args:
             label = tf.argmax(tf.reduce_sum(tf.nn.softmax(y), axis=0), axis=0)
             pre_label = label.eval(feed_dict={x: data_x, keep_prob: 1.0}, session=self.__sess)
 
-            return int(pre_label)
+            return pre_label
