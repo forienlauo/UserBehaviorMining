@@ -19,8 +19,6 @@ need args:
     <data_x_dir_path> <data_y_dir_path>
     <model_file_path>
     [cpu_core_num]
-where
-    neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 3 conv layers)
 """)
 
     @staticmethod
