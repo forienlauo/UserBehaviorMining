@@ -172,13 +172,11 @@ where
         def conv2d(x, W,
                    strides=(1, CNNTrainer.CONV_STRIDES_H, CNNTrainer.CONV_STRIDES_W, 1),
                    padding='SAME', name=None, ):
-            # 如果使用默认步长strides[height, width]=[1,1], 则卷积后的图片大小不变
             return tf.nn.conv2d(x, W, strides, padding, name=name, )
 
         def max_pool(x, ksize,
                      strides=(1, CNNTrainer.POOL_STRIDES_H, CNNTrainer.POOL_STRIDES_W, 1),
                      padding='SAME', name=None, ):
-            # 如果使用默认步长strides[height, width]=[2,2], 则卷积后的图片大小变为原来的一半
             return tf.nn.max_pool(x, ksize, strides, padding, name=name, )
 
         with tf.name_scope('model') as _:
@@ -191,7 +189,7 @@ where
 
             # C1
             with tf.name_scope('C1') as _:
-                _in = out0  # shape[_example_cnt, _height, _width, _in_channels]
+                _in = out0
                 _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
                 _in_channels = _in.get_shape()[3].value
                 _out_channels = neurons_nums[0]
@@ -217,7 +215,7 @@ where
 
             # C3
             with tf.name_scope('C3') as _:
-                _in = out  # shape[_example_cnt, _height, _width, _in_channels]
+                _in = out
                 _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
                 _in_channels = _in.get_shape()[3].value
                 _out_channels = neurons_nums[1]
@@ -243,7 +241,7 @@ where
 
             # C5
             with tf.name_scope('C5') as _:
-                _in = out  # shape[_example_cnt, _height, _width, _in_channels]
+                _in = out
                 _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
                 _in_channels = _in.get_shape()[3].value
                 _out_channels = neurons_nums[2]
@@ -260,7 +258,7 @@ where
 
             # F6, Densely Connected Layer(Full Connected Layer)
             with tf.name_scope('F6') as _:
-                _in = out  # shape[_example_cnt, _height, _width, _in_channels]
+                _in = out
                 _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
                 _in_channels = _in.get_shape()[3].value
                 _out_width = 1024
@@ -268,9 +266,9 @@ where
                 W_fc = weight_variable([_height * _width * _in_channels, _out_width], name='W_fc', )
                 b_fc = bias_variable([_out_width], name='b_fc', )
                 h_pool_flat = tf.reshape(_in, [-1, _height * _width * _in_channels], name='h_pool_flat', )
-                h_fc = tf.nn.relu(tf.matmul(h_pool_flat, W_fc) + b_fc, name='h_fc', )  # 这不再卷积,直接矩阵乘
+                h_fc = tf.nn.relu(tf.matmul(h_pool_flat, W_fc) + b_fc, name='h_fc', )
 
-                out = h_fc  # shape[_example_cnt, _out_width]
+                out = h_fc
 
             # Dropout Layer
             with tf.name_scope('DropoutLayer') as _:
@@ -282,15 +280,13 @@ where
 
             # Output Layer
             with tf.name_scope('OutputLayer') as _:
-                _in_ = out  # shape[_example_cnt, _in_width_]
+                _in_ = out
                 _in_width_ = _in_.get_shape()[1].value
                 _out_width_ = target_class_cnt
 
                 W_fc_ = weight_variable([_in_width_, _out_width_], name='W_fc_', )
                 b_fc_ = bias_variable([_out_width_], name='b_fc_', )
                 y = tf.add(tf.matmul(_in_, W_fc_), b_fc_, name='y', )
-
-                out_ = y  # shape[_example_cnt, _out_width_]
 
         # Trainer
         with tf.name_scope('trainer') as _:
