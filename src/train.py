@@ -110,9 +110,10 @@ where
         logging.info('cost time: %.2fs' % (end_time - start_time))
 
         config = tf.ConfigProto(
-            device_count={"CPU": cpu_core_num},
-            inter_op_parallelism_threads=cpu_core_num,
-            intra_op_parallelism_threads=cpu_core_num,
+            allow_soft_placement=True,
+            # device_count={"CPU": cpu_core_num},
+            # inter_op_parallelism_threads=cpu_core_num,
+            # intra_op_parallelism_threads=cpu_core_num,
         )
 
         with tf.Session(config=config) as sess:
@@ -380,9 +381,10 @@ where
         logging.info('cost time: %.2fs' % (end_time - start_time))
 
         config = tf.ConfigProto(
-            device_count={"CPU": cpu_core_num},
-            inter_op_parallelism_threads=cpu_core_num,
-            intra_op_parallelism_threads=cpu_core_num,
+            allow_soft_placement=True,
+            # device_count={"CPU": cpu_core_num},
+            # inter_op_parallelism_threads=cpu_core_num,
+            # intra_op_parallelism_threads=cpu_core_num,
         )
 
         with tf.Session(config=config) as sess:
