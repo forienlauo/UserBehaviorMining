@@ -3,7 +3,7 @@ import sys
 
 import conf
 from src.predict import CNNPredictor
-from src.train import CNNTrainer
+from src.train3d import CNNTrainer
 
 
 def print_usage():
