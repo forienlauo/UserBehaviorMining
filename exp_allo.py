@@ -11,9 +11,6 @@ need args:
     <train_data_x_path> <train_data_y_path>
     <test_data_x_path> <test_data_y_path>
     <train_example_proportion>
-where
-    module_name is <prepare|train|predict>
-    module_argv depends on concrete module
 """)
 
 
