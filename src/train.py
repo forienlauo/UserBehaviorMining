@@ -7,6 +7,7 @@ import numpy as np
 import tensorflow as tf
 
 import conf
+from src.util.common import dump_model, load_model
 from src.util.sampler import random_sample
 
 
@@ -39,22 +40,10 @@ where
 
     @staticmethod
     def fit(argv):
-        """支持训练并评估 baseline 级别的输入为任意<height, width, in_channels, target_class_cnt> 的 cnn 模型
-        cnn的样本格式: 每行样本是一张拉成1维的图片(height*weight*in_channels), 外加 one_hot形式的标签(长度为 target_class_cnt )
-            即,每行共有 height*weight*in_channels + target_class_cnt 列
-        @:param argv list, as:
-                    need args:
-                        <delimiter>
-                        <train_data_x_file_path> <train_data_y_file_path> <test_data_x_file_path> <test_data_y_file_path>
-                        <initial_height> <initial_width> <initial_channels> <target_class_cnt>
-                        <iteration> <batch_size>
-                        <model_file_path>
-                        <summary_log_dir_path>
-                        <conv_height> <conv_width>
-                        <neurons_nums>
-                        [cpu_core_num]
-                    where
-                        neurons_nums is numbers of neurons in each conv layer, separated by comma(support no more than 3 conv layers)
+        """训练并评估 cnn 模型
+        样本格式(x): 每行样本是一张拉成1维的图片(height*weight*in_channels)
+        标签格式(y): 每行标签是一个 one_hot 形式的向量(长度为 target_class_cnt )
+        @:param argv list, 详见 print_usage() 方法
         """
         if len(argv) < 16:
             CNNTrainer.print_usage()
@@ -143,7 +132,7 @@ where
             logging.info('cost time: %.2fs' % (end_time - start_time))
 
             # dump model
-            CNNTrainer.dump_model(sess, model_file_path)
+            dump_model(sess, model_file_path)
             logging.info("dump model into: %s" % model_file_path)
 
             # evaluate
@@ -183,13 +172,11 @@ where
         def conv2d(x, W,
                    strides=(1, CNNTrainer.CONV_STRIDES_H, CNNTrainer.CONV_STRIDES_W, 1),
                    padding='SAME', name=None, ):
-            # 如果使用默认步长strides[height, width]=[1,1], 则卷积后的图片大小不变
             return tf.nn.conv2d(x, W, strides, padding, name=name, )
 
         def max_pool(x, ksize,
                      strides=(1, CNNTrainer.POOL_STRIDES_H, CNNTrainer.POOL_STRIDES_W, 1),
                      padding='SAME', name=None, ):
-            # 如果使用默认步长strides[height, width]=[2,2], 则卷积后的图片大小变为原来的一半
             return tf.nn.max_pool(x, ksize, strides, padding, name=name, )
 
         with tf.name_scope('model') as _:
@@ -202,7 +189,7 @@ where
 
             # C1
             with tf.name_scope('C1') as _:
-                _in = out0  # shape[_example_cnt, _height, _width, _in_channels]
+                _in = out0
                 _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
                 _in_channels = _in.get_shape()[3].value
                 _out_channels = neurons_nums[0]
@@ -228,7 +215,7 @@ where
 
             # C3
             with tf.name_scope('C3') as _:
-                _in = out  # shape[_example_cnt, _height, _width, _in_channels]
+                _in = out
                 _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
                 _in_channels = _in.get_shape()[3].value
                 _out_channels = neurons_nums[1]
@@ -254,7 +241,7 @@ where
 
             # C5
             with tf.name_scope('C5') as _:
-                _in = out  # shape[_example_cnt, _height, _width, _in_channels]
+                _in = out
                 _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
                 _in_channels = _in.get_shape()[3].value
                 _out_channels = neurons_nums[2]
@@ -271,7 +258,7 @@ where
 
             # F6, Densely Connected Layer(Full Connected Layer)
             with tf.name_scope('F6') as _:
-                _in = out  # shape[_example_cnt, _height, _width, _in_channels]
+                _in = out
                 _height, _width = _in.get_shape()[1].value, _in.get_shape()[2].value
                 _in_channels = _in.get_shape()[3].value
                 _out_width = 1024
@@ -279,9 +266,9 @@ where
                 W_fc = weight_variable([_height * _width * _in_channels, _out_width], name='W_fc', )
                 b_fc = bias_variable([_out_width], name='b_fc', )
                 h_pool_flat = tf.reshape(_in, [-1, _height * _width * _in_channels], name='h_pool_flat', )
-                h_fc = tf.nn.relu(tf.matmul(h_pool_flat, W_fc) + b_fc, name='h_fc', )  # 这不再卷积,直接矩阵乘
+                h_fc = tf.nn.relu(tf.matmul(h_pool_flat, W_fc) + b_fc, name='h_fc', )
 
-                out = h_fc  # shape[_example_cnt, _out_width]
+                out = h_fc
 
             # Dropout Layer
             with tf.name_scope('DropoutLayer') as _:
@@ -293,7 +280,7 @@ where
 
             # Output Layer
             with tf.name_scope('OutputLayer') as _:
-                _in_ = out  # shape[_example_cnt, _in_width_]
+                _in_ = out
                 _in_width_ = _in_.get_shape()[1].value
                 _out_width_ = target_class_cnt
 
@@ -301,10 +288,8 @@ where
                 b_fc_ = bias_variable([_out_width_], name='b_fc_', )
                 y = tf.add(tf.matmul(_in_, W_fc_), b_fc_, name='y', )
 
-                out_ = y  # shape[_example_cnt, _out_width_]
-
         # Trainer
-        with tf.name_scope('Trainer') as _:
+        with tf.name_scope('trainer') as _:
             loss = tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y), name='loss', )
             train_per_step = tf.train.AdamOptimizer(1e-5).minimize(loss, name='train_per_step', )
@@ -313,7 +298,7 @@ where
             trainer = CNNTrainer.Trainer(train_per_step)
 
         # Evaluator
-        with tf.name_scope('Evaluator') as _:
+        with tf.name_scope('evaluator') as _:
             example_cnt = tf.count_nonzero(
                 tf.logical_or(tf.cast(tf.argmax(y_, 1), dtype=tf.bool), True), name='example_cnt')  # 样本总数
 
@@ -373,30 +358,6 @@ where
         return data
 
     @staticmethod
-    def dump_model(sess, model_file_path, ):
-        """保存一个sess中的全部变量
-        实际并不存在文件路径 model_file_path, dirname(model_file_path) 作为保存的目录, basename(model_file_path) 作为模型的名字
-        @:return 模型保存保存的目录,即 dirname(model_file_path)
-        """
-        saver = tf.train.Saver()
-        saver.save(sess, model_file_path)
-
-        model_dir = os.path.dirname(model_file_path)
-        return model_dir
-
-    @staticmethod
-    def load_model(sess, model_file_path, ):
-        """加载一个sess中的全部变量
-        实际并不存在文件路径 model_file_path, dirname(model_file_path) 作为保存的目录, basename(model_file_path) 作为模型的名字
-        @:return sess中的 gragh, 可以通过 graph 取得所有 tensor 和 operation
-        """
-        meta_gragh_path = '%s.meta' % (model_file_path,)
-        saver = tf.train.import_meta_graph(meta_gragh_path)
-        saver.restore(sess, tf.train.latest_checkpoint(os.path.dirname(model_file_path)))
-
-        return tf.get_default_graph()
-
-    @staticmethod
     def view_evaluate_result(
             delimiter,
             test_data_x_file_path, test_data_y_file_path,
@@ -426,7 +387,7 @@ where
 
         with tf.Session(config=config) as sess:
             # load model
-            graph = CNNTrainer.load_model(sess, model_file_path)
+            graph = load_model(sess, model_file_path)
             x = graph.get_tensor_by_name("input/x:0")
             y_ = graph.get_tensor_by_name("input/y_:0")
             keep_prob = graph.get_tensor_by_name("input/keep_prob:0")

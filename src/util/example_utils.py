@@ -113,8 +113,6 @@ class ExampleAllocator(object):
                 else:  # 其余是测试数据
                     allocatedTestDataFile_x.write(line_x)
                     allocatedTestDataFile_y.write(line_y)
-            return self.allocatedTrainDataFilePaths, self.allocatedTestDataFilePaths
-        raise IOError('Failed to allocate examples using givin conf.')
 
 
 if __name__ == '__main__':

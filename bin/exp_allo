@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+script_name=$0
+dir=`dirname $script_name`
+cd $dir/..
+
+python exp_allo.py $@

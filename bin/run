@@ -7,3 +7,4 @@ cd $dir/..
 log_file="log/`date +%Y-%m-%d-%H-%M-%S`.log"
 
 nohup python start.py $@ >> $log_file 2>&1 &
+echo "logging into: $log_file"
