@@ -5,7 +5,7 @@ from conf import DataType
 from src.util.filter.InfoFilter import InfoFilter
 from src.util.filter.RecordFilter import RecordFilter
 from src.util.feature.FeatureCNN import FeaturesCNN
-
+import shutil
 
 class Prepare:
 
@@ -44,7 +44,7 @@ class Prepare:
 
         if (do_clean == '1'):
             if (os.path.exists(output_data_path)):
-                os.removedirs(output_data_path)
+                shutil.rmtree(output_data_path)
             os.makedirs(output_data_path)
 
 
@@ -64,10 +64,11 @@ class Prepare:
 
 
 if __name__ == '__main__':
-    argv = ['1', \
+    argv = [
             '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/',
             '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/',
-            '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/'
+            '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/',
+            '1'
             ]
     Prepare.prepare(argv)
 

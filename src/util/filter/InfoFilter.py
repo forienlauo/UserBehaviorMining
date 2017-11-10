@@ -17,7 +17,7 @@ from src.util.BaseProcess import BaseProcess
 class InfoFilter(BaseProcess):
 
     def __init__(self, user_type, input_data_path, output_data_path):
-        BaseProcess.__init__(self, user_type, input_data_path, output_data_path)
+        BaseProcess.__init__(self, user_type, output_data_path)
         self.process_name = 'filter'
         self.content_type = 'info'
         self.input_data_path = input_data_path
