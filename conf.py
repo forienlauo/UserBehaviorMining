@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 from multiprocessing import cpu_count
+from enum import Enum, unique
 
 # log setting
 __LOG_LEVEL = (logging.INFO, logging.ERROR, logging.DEBUG)[-1]
@@ -18,6 +19,124 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 CPU_COUNT = cpu_count()
+
+@unique
+class DataType(Enum):
+    normal = 0
+    fraud = 1
+    test = 2
+
+
+class FeatureCNNConf(object):
+    SEPARATOR = '|'
+
+    REPETITION_COUNTS = 7
+
+    FEATURE_COUNTS = 11
+
+
+    COLUMNS_NAME = [
+        'user_type',
+        'sell_product',
+        'fe_cost_mean',
+        'is_realname',
+        'fe_duration_mean',
+        'fe_all_call_count_count',
+        'fe_type_median',
+        'fe_cost_std',
+        'plan_name',
+        'open_tate',
+        'fe_duration_std'
+    ]
+
+
+class FeatureSVMConf(object):
+
+    COLUMNS_NAME = [
+        'is_realname',
+        'sell_product',
+        'user_type',
+        'open_tate',
+        'sub_stattp',
+        'plan_name',
+        'is_include'
+    ]
+
+
+class RecordConf(object):
+
+    SEPARATOR = '|'
+
+    INTERVAL = 5   # 5分钟为采样间隔
+
+    FEATURE_NUM = 11
+    PARTITION_COUNT = 200
+
+    RECORD_TABLE_IND = dict(
+        from_num=[0, int],
+        to_num=[1, int],
+        charge_num=[2, int],
+        start_time=[3, int],
+        duration=[4, int],
+        cost=[5, int],
+        type=[6, int],
+        call_type=[7, int],
+        talk_type=[8, int],
+        from_area=[9, int],
+        to_area=[10, int],
+    )
+
+    TYPE_DICT = {
+        'cvoi': '0',
+        'local': '1',
+        'distance': '2'
+    }  # type类型映射
+
+    SAMPLING_MONTH = (2, 3)  # 采样月份的范围
+    SAMPLING_HOUR = [(7, 12), (12, 17), (17, 22)]  # 每天采样的时间段，单位为小时
+
+
+class InfoConf(object):
+
+    INFO_TABLE_IND = {
+        u'主叫': 'from_num',
+        # u'用户名（userName）':'user_name',
+        u'产品名（planName）': 'plan_name',
+        # u'客户标识（custCode）':'cust_code',
+        u'用户类别（userType）': 'user_type',
+        u'开户时间（openDate）': 'open_tate',
+        u'是否停机（subStatTp）': 'sub_stattp',
+        u'是否实名制（isRealname）': 'is_realname',
+        u'销售产品（sellProduct）': 'sell_product',
+        # u'360标注类型（telType）':'tel_type',
+        # u'360标注次数（telCount）':'tel_count',
+        # u'业务行为（xsub_action_cd）':'xsub_action_cd',
+        # u'停机日期（xstop_dt）':'xstop_dt'
+    }
+
+    INFO_TYPE_DICT = {
+        u'政企': 0,
+        u'公众': 100
+    }
+
+    INFO_SUB_STAT_DICT = {
+        'BLANK' : 0,
+        u'活动': 40,
+        u'停机': 80,
+        u'拆机': 120,
+        u'帐务停机': 160,
+        u'割接': 200
+    }
+
+    SELL_PRODUCT_DICT = {
+        u'CDMA预付费': 0,
+        u'CDMA后付费': 30,
+        u'CDMA准实时预付费': 60,
+        u'C+W（E+W）预付费': 90,
+        u'C+W（E+W）后付费': 120,
+        u'C+W（E+W）准实时预付费': 150,
+        u'其他': 180
+    }
 
 
 class CDRDataDict(object):
