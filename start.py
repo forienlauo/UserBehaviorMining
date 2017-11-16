@@ -4,6 +4,7 @@ import sys
 
 import conf
 from src.predict import CNNPredictor
+from src.prepare import Prepare
 from src.train import CNNTrainer
 
 
@@ -28,8 +29,7 @@ if __name__ == '__main__':
     module_argv = sys.argv[2:]
     exit_code = 0
     if module_name == 'prepare':
-        # 2017/07/19,niuqiang TODO call module prepare
-        pass
+        Prepare.prepare(module_argv)
     elif module_name == 'train':
         exit_code = CNNTrainer.fit(module_argv)
     elif module_name == 'predict':
