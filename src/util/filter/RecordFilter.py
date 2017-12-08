@@ -3,6 +3,7 @@ import sys
 import os
 import glob
 import pandas as pd
+import logging
 sys.path.append('../../../')
 
 from conf import RecordConf
@@ -20,7 +21,18 @@ class RecordFilter(BaseProcess):
         self.input_data_path = input_data_path
 
     def process(self):
-        for file_path in glob.glob(self.input_data_path + '/*txt.md5'):
+        output_path = os.path.join(self.output_data_path, self.process_name, self.content_type)
+        if not os.path.exists(output_path):
+            self.mkdirs(output_path)
+
+        for file in os.listdir(output_path):
+            if(file.startswith(self.user_type)):
+                return self
+        record_file_list = glob.glob(self.input_data_path + '/*txt.md5')
+        if(len(record_file_list) == 0):
+            logging.info('No record data has found, please check the data path')
+            os._exit(0)
+        for file_path in record_file_list:
             self.partition(file_path, self.user_type)
         return self
 
@@ -51,7 +63,7 @@ class RecordFilter(BaseProcess):
         # 被过滤掉的数据
         if len(exclude_lines) != 0:
             exclude_file_path = self.get_output_path("%s_%s.txt" % (user_type, basename), 'exclude')
-            self.mkdirs(exclude_file_path)
+            self.mkdirs(os.path.dirname(exclude_file_path))
             with open(exclude_file_path, 'w') as exclude_lines_file:
                 exclude_lines_file.writelines(exclude_lines)
 
@@ -60,18 +72,18 @@ class RecordFilter(BaseProcess):
         columns_name = [name for name, num in columns]
         for (part_key, include_lines) in partition_dict.items():
             include_file_path = self.get_output_path("%s_%s.txt" % (user_type, part_key))
-            self.mkdirs(include_file_path)
+            self.mkdirs(os.path.dirname(include_file_path))
             with open(include_file_path, 'a') as include_lines_file:
                 if include_lines_file.tell() == 0:  # 若写入偏移量为零，则将列名写入
                     include_lines_file.write('|'.join(columns_name) + '\n')
                 include_lines_file.writelines(include_lines)
 
-        print user_type, basename + ' is finished.'
+        logging.info('%s(%s) is finished.'%(basename, user_type))
 
 
     def partition_hash(self, line):
         '''
-        partition映射规则： 主叫号码后三位转为10进制求  余
+        partition映射规则： 主叫号码后三位转为10进制求余
         :param line: 一条数据
         :return: 映射值
         '''
@@ -82,13 +94,12 @@ class RecordFilter(BaseProcess):
         return int(from_num[-3:], 16) % RecordConf.PARTITION_COUNT
 
     def get_data(self):
-        record_all = None
         output_path = self.get_output_path()
         record_dict = {}
         for file_path in glob.glob(output_path + self.user_type + '*.txt'):
             record = pd.read_csv(file_path, sep=RecordConf.SEPARATOR)
             record_dict = dict(record_dict, **(self.data_merge(record)))
-            print file_path
+            logging.info('%s has been gotten'%(file_path))
 
         feature_dict = {}
         for key, dataframe in record_dict.items():
@@ -96,7 +107,7 @@ class RecordFilter(BaseProcess):
             for funs in (i for i in dir(self) if i[:3] == 'fe_'):
                 feature.append(pd.DataFrame(getattr(self, funs)(dataframe, funs)))
             feature_dict[key] = pd.concat(feature, axis=1)
-        print("Extracing finished")
+        logging.info("Filter %s finished"%(self.user_type))
         return feature_dict
 
     def data_merge(self, data):
@@ -115,9 +126,8 @@ class RecordFilter(BaseProcess):
 
         data_dict = {}
         for fromnum in set(data.from_num):
-            print fromnum
             for month_ind in range(RecordConf.SAMPLING_MONTH[0], RecordConf.SAMPLING_MONTH[1]):
-                for day_ind in range(1, 32, 10):
+                for day_ind in range(1, 32):
                     for window_ind in range(3):
                         key = '%s_%s_%s_%s' % (fromnum, month_ind, day_ind, window_ind)
                         data_tmp = data[(data.from_num == fromnum) & (data.month == month_ind) & (data.day == day_ind)]
@@ -171,15 +181,15 @@ class RecordFilter(BaseProcess):
             return False
 
         from_num = row[RecordConf.RECORD_TABLE_IND['from_num'][0]]
-        if not (len(from_num) <= 32 or len(from_num) >= 30):
+        if not (len(from_num) <= 58 or len(from_num) >= 50):
             return False
 
         to_num = row[RecordConf.RECORD_TABLE_IND['to_num'][0]]
-        if not (len(to_num) <= 32 or len(to_num) >= 30):
+        if not (len(to_num) <= 58 or len(to_num) >= 50):
             return False
 
         charge_num = row[RecordConf.RECORD_TABLE_IND['charge_num'][0]]
-        if not (len(charge_num) <= 32 or len(charge_num) >= 30):
+        if not (len(charge_num) <= 58 or len(charge_num) >= 50):
             return False
 
         start_time = row[RecordConf.RECORD_TABLE_IND['start_time'][0]]
@@ -197,26 +207,17 @@ class RecordFilter(BaseProcess):
         type = row[RecordConf.RECORD_TABLE_IND['type'][0]]
         if not len(type) > 0:
             return False
-        row[RecordConf.RECORD_TABLE_IND['type'][0]] = RecordConf.TYPE_DICT[type]
-
-
-        if type == 'local' or type == 'distance':  # 如果通话类型为本地、外地固话，则可能没有后面的数据
-            return True
 
         call_type = row[RecordConf.RECORD_TABLE_IND['call_type'][0]]
         if not len(call_type) > 0:
             return False
 
-        talk_type = row[RecordConf.RECORD_TABLE_IND['talk_type'][0]]
-        if not len(talk_type) > 0:
+        longdis_type = row[RecordConf.RECORD_TABLE_IND['longdis_type'][0]]
+        if not len(longdis_type) > 0:
             return False
 
-        from_area = row[RecordConf.RECORD_TABLE_IND['from_area'][0]]
-        if not (from_area.isdigit() and from_area > 0):
-            return False
-
-        to_area = row[RecordConf.RECORD_TABLE_IND['to_area'][0]]
-        if not (to_area.isdigit() and to_area > 0):
+        roaming_type = row[RecordConf.RECORD_TABLE_IND['roaming_type'][0]]
+        if not len(roaming_type) > 0:
             return False
 
         return row

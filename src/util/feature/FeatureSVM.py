@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import pandas as pd
 import pickle
-import random
-from scipy import misc
+import logging
 import numpy as np
-import sklearn.preprocessing
 from src.util.BaseProcess import BaseProcess
 from conf import FeatureSVMConf
 from conf import DataType
@@ -43,7 +40,7 @@ class UserBehaviorFeaturesCNN(BaseProcess):
         record_dataframe_dict = self.record_filter.get_data()
 
         data_X, data_y = self.trans_data(record_dataframe_dict)
-        print("Transfer to picture and save finished")
+        logging.info("Transfer to picture and save finished")
         return data_X, data_y
 
 
@@ -72,7 +69,6 @@ class UserBehaviorFeaturesCNN(BaseProcess):
 
             data_y.append(DataType[self.user_type].value)
 
-            print
             # 对列归一化
             # self.mkdirs(self.get_output_path(from_num + '.uid'))
             # with open(self.get_output_path(from_num + '.uid'), 'a') as data_x_file:
@@ -118,7 +114,7 @@ class UserBehaviorFeaturesCNN(BaseProcess):
         for i in range(len(result)):
             if(result[i] == y_test[i]):
                 right_counts += 1
-        print '%4f'%(1.0 * right_counts / len(result))
+        logging.info('%4f'%(1.0 * right_counts / len(result)))
 
     def set_info_filter(self, info_filter):
         self.info_filter = info_filter

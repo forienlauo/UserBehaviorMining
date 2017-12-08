@@ -2,8 +2,9 @@
 # -*- coding: UTF-8 -*-
 
 import pandas as pd
-import pickle
+import logging
 import random
+import os
 from scipy import misc
 import sklearn.preprocessing
 from src.util.BaseProcess import BaseProcess
@@ -34,7 +35,7 @@ class FeaturesCNN(BaseProcess):
         :param data_type: fraud_user/normal_user
         :return:
         """
-        if(self.info_filter == None or self.record_filter == None):
+        if(self.record_filter == None):
             raise "Class %s does not have filter." % self.__class__
 
         record_dataframe_dict = self.record_filter.get_data()
@@ -47,7 +48,7 @@ class FeaturesCNN(BaseProcess):
     def trans_image(self, record_dataframe_dict):
 
         #懒加载
-        info_dict = pickle.load(open(self.info_filter.get_output_path(self.user_type + '_dict.pkl')))
+        #info_dict = pickle.load(open(self.info_filter.get_output_path(self.user_type + '_dict.pkl')))
 
         # 对train_x处理
         min_max_scaler = sklearn.preprocessing.MinMaxScaler()
@@ -70,19 +71,19 @@ class FeaturesCNN(BaseProcess):
             #merge用户信息
             from_num = key.strip().split('_')[0]
 
-            if(info_dict.has_key(from_num)):
-                info = info_dict[from_num]
-            else:
-                continue
+            # if(info_dict.has_key(from_num)):
+            #     info = info_dict[from_num]
+            # else:
+            #     continue
 
             #将info信息转成dataframe格式
-            info_cols = {}
-            for (k, val) in dict(info).items():
-                info_cols[k] = pd.Series(60 * [val])
-            info_df = pd.DataFrame(info_cols)
+            # info_cols = {}
+            # for (k, val) in dict(info).items():
+            #     info_cols[k] = pd.Series(60 * [val])
+            # info_df = pd.DataFrame(info_cols)
 
             #record和info的merge
-            ind_record_info_df = pd.merge(ind_record_df, info_df, left_index=True, right_index=True)
+            # ind_record_info_df = pd.merge(ind_record_df, info_df, left_index=True, right_index=True)
 
             columns_name_list = []
             columes_list = FeatureCNNConf.COLUMNS_NAME
@@ -94,16 +95,16 @@ class FeaturesCNN(BaseProcess):
 
             data_df = pd.DataFrame([])
             for i, name in enumerate(columns_name_list):
-                data_df.insert(0, '%s_%s' % (name, i), ind_record_info_df[name])
+                data_df.insert(0, '%s_%s' % (name, i), ind_record_df[name])
 
             # 对列归一化
             data_arr = min_max_scaler.fit_transform(data_df)
-            columes_count = FeatureCNNConf.REPETITION_COUNTS * FeatureCNNConf.FEATURE_COUNTS
+            columes_count = FeatureCNNConf.REPETITION_COUNTS * len(FeatureCNNConf.COLUMNS_NAME)
             data_pic = misc.imresize(data_arr.reshape(60, columes_count), 1.0)
             data_x_str = data_pic.reshape(1, -11).astype(str).tolist()[0]
             data_x_str = ','.join(data_x_str)
 
-            self.mkdirs(self.get_output_path(from_num + '.uid'))
+            self.mkdirs(os.path.dirname(self.get_output_path(from_num + '.uid')))
             with open(self.get_output_path(from_num + '.uid'), 'a') as data_x_file:
                 data_x_file.write(data_x_str + '\n')
 
@@ -111,7 +112,7 @@ class FeaturesCNN(BaseProcess):
             with open(self.get_output_path(from_num + '.label'), 'a') as data_y_file:
                 data_y_file.write(str(data_y) + '\n')
 
-        print("Transfer to picture and save finished")
+        logging.info("Transfer to picture and save finished")
 
 
     def set_info_filter(self, info_filter):

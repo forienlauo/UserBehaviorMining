@@ -34,18 +34,12 @@ class FeatureCNNConf(object):
 
     FEATURE_COUNTS = 11
 
-
     COLUMNS_NAME = [
-        'user_type',
-        'sell_product',
         'fe_cost_mean',
-        'is_realname',
         'fe_duration_mean',
         'fe_all_call_count_count',
         'fe_type_median',
         'fe_cost_std',
-        'plan_name',
-        'open_tate',
         'fe_duration_std'
     ]
 
@@ -69,7 +63,7 @@ class RecordConf(object):
 
     INTERVAL = 5   # 5分钟为采样间隔
 
-    FEATURE_NUM = 11
+    FEATURE_NUM = 10
     PARTITION_COUNT = 200
 
     RECORD_TABLE_IND = dict(
@@ -81,9 +75,9 @@ class RecordConf(object):
         cost=[5, int],
         type=[6, int],
         call_type=[7, int],
-        talk_type=[8, int],
-        from_area=[9, int],
-        to_area=[10, int],
+        longdis_type=[8, int],
+        roaming_type=[9, int],
+        voicecall_type=[10, int],
     )
 
     TYPE_DICT = {
@@ -92,7 +86,7 @@ class RecordConf(object):
         'distance': '2'
     }  # type类型映射
 
-    SAMPLING_MONTH = (2, 3)  # 采样月份的范围
+    SAMPLING_MONTH = (1, 13)  # 采样月份的范围
     SAMPLING_HOUR = [(7, 12), (12, 17), (17, 22)]  # 每天采样的时间段，单位为小时
 
 

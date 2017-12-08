@@ -10,10 +10,9 @@ class BaseProcess:
         self.user_type = user_type
         self.output_data_path = output_data_path
 
-    def mkdirs(self, path):
-        dirname = os.path.dirname(path)
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
+    def mkdirs(self, dir):
+        if not os.path.exists(dir):
+            os.makedirs(dir)
 
     def get_output_path(self, basename = '', clude_type = ''):
         '''
