@@ -125,7 +125,7 @@ if __name__ == '__main__':
 
     info = InfoFilter(DataType.normal.name,
                       '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/info/普通用户号码_md5.xlsx',
-                      '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/')
+                      '/Users/mayuchen/Documents/Python/Repositorygr/DL/Other/UserBehaviorMining/resource/data/')
 
     record = RecordFilter(DataType.normal.name,
                           '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/normal_user',
