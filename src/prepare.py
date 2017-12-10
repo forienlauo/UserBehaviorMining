@@ -5,6 +5,7 @@ from conf import DataType
 from src.util.filter.RecordFilter import RecordFilter
 from src.util.feature.FeatureCNN import FeaturesCNN
 import shutil
+from util.splitter import split_fraud_normal
 
 class Prepare:
 
@@ -25,19 +26,11 @@ class Prepare:
             return 1
         logging.info('argv: "%s"', ' '.join(argv))
 
-        record_fraud_data_path, record_normal_data_path, output_data_path = argv[0], argv[1], argv[2]
-        do_clean = argv[3]
+        record_data_path, output_data_path = argv[0], argv[1]
+        do_clean = argv[2]
 
-        # if not os.path.exists(info_data_path):
-        #     logging.info('info_data_path do not exists: "%s"', info_data_path)
-        #     return -1
-
-        if not os.path.exists(record_fraud_data_path):
-            logging.info('record_data_path do not exists: "%s"', record_fraud_data_path)
-            return -1
-
-        if not os.path.exists(record_normal_data_path):
-            logging.info('record_data_path do not exists: "%s"', record_normal_data_path)
+        if not os.path.exists(record_data_path):
+            logging.info('record_data_path do not exists: "%s"', record_data_path)
             return -1
 
         if not os.path.exists(output_data_path):
@@ -49,6 +42,7 @@ class Prepare:
                 shutil.rmtree(output_data_path)
             os.makedirs(output_data_path)
 
+        record_fraud_data_path, record_normal_data_path = split_fraud_normal(record_data_path, output_data_path)
 
         normal_record = RecordFilter(DataType.normal.name, record_normal_data_path, output_data_path).process()
         normal_feature = FeaturesCNN(DataType.normal.name, output_data_path)
@@ -64,7 +58,6 @@ class Prepare:
 if __name__ == '__main__':
     argv = [
             '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/fraud_user/',
-            '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/normal_user/',
             '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/',
             '0'
             ]

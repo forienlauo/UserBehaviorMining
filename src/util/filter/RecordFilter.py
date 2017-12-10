@@ -181,15 +181,15 @@ class RecordFilter(BaseProcess):
             return False
 
         from_num = row[RecordConf.RECORD_TABLE_IND['from_num'][0]]
-        if not (len(from_num) <= 58 or len(from_num) >= 50):
+        if not (len(from_num) <= 58 or len(from_num) >= 40):
             return False
 
         to_num = row[RecordConf.RECORD_TABLE_IND['to_num'][0]]
-        if not (len(to_num) <= 58 or len(to_num) >= 50):
+        if not (len(to_num) <= 58 or len(to_num) >= 40):
             return False
 
         charge_num = row[RecordConf.RECORD_TABLE_IND['charge_num'][0]]
-        if not (len(charge_num) <= 58 or len(charge_num) >= 50):
+        if not (len(charge_num) <= 58 or len(charge_num) >= 40):
             return False
 
         start_time = row[RecordConf.RECORD_TABLE_IND['start_time'][0]]
