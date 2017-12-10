@@ -23,7 +23,7 @@ def split_by_proportion(src_file_path, target_dir_path, split_file_cnt):
 
 def split_fraud_normal(record_data_path, output_data_path):
 
-    split_symbol = '|'
+    split_symbol = '\t'
 
     fraud_dict = {}
     with open('../configuration/fraud_num.txt', 'r') as fraud_num_file:
