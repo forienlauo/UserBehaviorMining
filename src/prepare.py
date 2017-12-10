@@ -50,17 +50,13 @@ class Prepare:
             os.makedirs(output_data_path)
 
 
-        # #normal_info = InfoFilter(DataType.normal.name, info_data_path , output_data_path).process()
-        # normal_record = RecordFilter(DataType.normal.name, record_normal_data_path, output_data_path).process()
-        # normal_feature = FeaturesCNN(DataType.normal.name, output_data_path)
-        # #normal_feature.set_info_filter(normal_info)
-        # normal_feature.set_record_filter(normal_record)
-        # normal_feature.process()
+        normal_record = RecordFilter(DataType.normal.name, record_normal_data_path, output_data_path).process()
+        normal_feature = FeaturesCNN(DataType.normal.name, output_data_path)
+        normal_feature.set_record_filter(normal_record)
+        normal_feature.process()
 
-        #fraud_info = InfoFilter(DataType.fraud.name, info_data_path, output_data_path).process()
         fraud_record = RecordFilter(DataType.fraud.name, record_fraud_data_path , output_data_path).process()
         fraud_feature = FeaturesCNN(DataType.fraud.name, output_data_path)
-        #fraud_feature.set_info_filter(fraud_info)
         fraud_feature.set_record_filter(fraud_record)
         fraud_feature.process()
 

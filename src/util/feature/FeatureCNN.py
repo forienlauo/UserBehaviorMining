@@ -47,9 +47,6 @@ class FeaturesCNN(BaseProcess):
 
     def trans_image(self, record_dataframe_dict):
 
-        #懒加载
-        #info_dict = pickle.load(open(self.info_filter.get_output_path(self.user_type + '_dict.pkl')))
-
         # 对train_x处理
         min_max_scaler = sklearn.preprocessing.MinMaxScaler()
 
