@@ -43,6 +43,8 @@ class Prepare:
             os.makedirs(output_data_path)
 
         fraud_record_file_path, normal_record_file_path = split_fraud_normal(record_data_path, output_data_path)
+        logging.info("fraud_record_file_path: %s" % fraud_record_file_path)
+        logging.info("normal_record_file_path: %s" % normal_record_file_path)
 
         normal_record = RecordFilter(
             DataType.normal.name, os.path.dirname(normal_record_file_path), output_data_path

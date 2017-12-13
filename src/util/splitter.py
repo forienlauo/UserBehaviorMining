@@ -35,7 +35,7 @@ def split_fraud_normal(record_data_path, output_data_path):
     # 解析record_data
     fraud_txt = []
     normal_txt = []
-    user_counts = [0, 0]
+    record_counts = [0, 0]
     for record_file_dir in os.listdir(record_data_path):
         reacord_name = os.path.basename(record_file_dir)
         if not (reacord_name.endswith('.out') or reacord_name.endswith('.txt')):
@@ -47,16 +47,17 @@ def split_fraud_normal(record_data_path, output_data_path):
                 assert len(from_num) > 40 and len(from_num) < 58
                 if(fraud_dict.has_key(from_num)):
                     fraud_txt.append(line)
-                    user_counts[DataType.fraud.value] += 1
+                    record_counts[DataType.fraud.value] += 1
                 else:
                     normal_txt.append(line)
-                    user_counts[DataType.normal.value] += 1
+                    record_counts[DataType.normal.value] += 1
 
-    if(user_counts[DataType.fraud.value] == 0 or user_counts[DataType.normal.value] == 0):
+    if(record_counts[DataType.fraud.value] == 0 or record_counts[DataType.normal.value] == 0):
         logging.error('No fraud or normal data !')
         sys.exit(1)
 
-    print user_counts[DataType.fraud.value], user_counts[DataType.normal.value]
+    logging.info("fraud record cnt: %s" % record_counts[DataType.fraud.value])
+    logging.info("normal record cnt: %s" % record_counts[DataType.normal.value])
 
 
     #存储record_data中fraud部分
