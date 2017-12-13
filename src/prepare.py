@@ -42,14 +42,18 @@ class Prepare:
                 shutil.rmtree(output_data_path)
             os.makedirs(output_data_path)
 
-        record_fraud_data_path, record_normal_data_path = split_fraud_normal(record_data_path, output_data_path)
+        fraud_record_file_path, normal_record_file_path = split_fraud_normal(record_data_path, output_data_path)
 
-        normal_record = RecordFilter(DataType.normal.name, record_normal_data_path, output_data_path).process()
+        normal_record = RecordFilter(
+            DataType.normal.name, os.path.dirname(normal_record_file_path), output_data_path
+        ).process()
         normal_feature = FeaturesCNN(DataType.normal.name, output_data_path)
         normal_feature.set_record_filter(normal_record)
         normal_feature.process()
 
-        fraud_record = RecordFilter(DataType.fraud.name, record_fraud_data_path , output_data_path).process()
+        fraud_record = RecordFilter(
+            DataType.fraud.name, os.path.dirname(fraud_record_file_path), output_data_path
+        ).process()
         fraud_feature = FeaturesCNN(DataType.fraud.name, output_data_path)
         fraud_feature.set_record_filter(fraud_record)
         fraud_feature.process()

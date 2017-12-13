@@ -63,20 +63,19 @@ def split_fraud_normal(record_data_path, output_data_path):
     fraud_dir = '%s/raw_data/fraud'%(output_data_path)
     if not os.path.exists(fraud_dir):
         os.makedirs(fraud_dir)
-    fraud_file_dir = '%s/fraud.txt.md5'%(fraud_dir)
-    with open(fraud_file_dir, 'w') as fraud_file:
+    fraud_file_path = '%s/fraud.txt.md5'%(fraud_dir)
+    with open(fraud_file_path, 'w') as fraud_file:
         fraud_file.writelines(fraud_txt)
 
-    # FIXME 20171213 niuqiang fraud_file_dir and normal_file_dir are actually files, but used as dir in RecordFilter
     # 存储record_data中normal部分
     normal_dir = '%s/raw_data/normal/'%(output_data_path)
     if not os.path.exists(normal_dir):
         os.makedirs(normal_dir)
-    normal_file_dir = '%s/normal.txt.md5' % (normal_dir)
-    with open(normal_file_dir, 'w') as normal_file:
+    normal_file_path = '%s/normal.txt.md5' % (normal_dir)
+    with open(normal_file_path, 'w') as normal_file:
         normal_file.writelines(normal_txt)
 
-    return fraud_file_dir, normal_file_dir
+    return fraud_file_path, normal_file_path
 
 
 
