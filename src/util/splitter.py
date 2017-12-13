@@ -44,7 +44,6 @@ def split_fraud_normal(record_data_path, output_data_path):
             record_lines = record_file.readlines()
             for line in record_lines:
                 from_num = line.split(split_symbol)[0].strip()
-                assert len(from_num) > 40 and len(from_num) < 58
                 if(fraud_dict.has_key(from_num)):
                     fraud_txt.append(line)
                     record_counts[DataType.fraud.value] += 1
