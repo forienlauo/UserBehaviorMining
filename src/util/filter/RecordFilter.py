@@ -75,8 +75,7 @@ class RecordFilter(BaseProcess):
             self.mkdirs(os.path.dirname(include_file_path))
             with open(include_file_path, 'a') as include_lines_file:
                 if include_lines_file.tell() == 0:  # 若写入偏移量为零，则将列名写入
-                    # FIXME 20171213 use RecordConf.SEPARATOR as sep
-                    include_lines_file.write('|'.join(columns_name) + '\n')
+                    include_lines_file.write(RecordConf.SEPARATOR.join(columns_name) + '\n')
                 include_lines_file.writelines(include_lines)
 
         logging.info('%s(%s) is finished.'%(basename, user_type))

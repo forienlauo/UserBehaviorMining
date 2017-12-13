@@ -58,8 +58,7 @@ class FeatureSVMConf(object):
 
 
 class RecordConf(object):
-    # FIXME 20171213 modify SEPARATOR to '\t'
-    SEPARATOR = '|'
+    SEPARATOR = '\t'
 
     INTERVAL = 5   # 5分钟为采样间隔
 
