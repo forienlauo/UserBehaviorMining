@@ -58,7 +58,7 @@ class FeatureSVMConf(object):
 
 
 class RecordConf(object):
-
+    # FIXME 20171213 modify SEPARATOR to '\t'
     SEPARATOR = '|'
 
     INTERVAL = 5   # 5分钟为采样间隔
@@ -73,6 +73,7 @@ class RecordConf(object):
         start_time=[3, int],
         duration=[4, int],
         cost=[5, int],
+        # FIXME 20171213 remove column 'type'
         type=[6, int],
         call_type=[7, int],
         longdis_type=[8, int],

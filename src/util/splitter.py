@@ -44,6 +44,7 @@ def split_fraud_normal(record_data_path, output_data_path):
             record_lines = record_file.readlines()
             for line in record_lines:
                 from_num = line.split(split_symbol)[0].strip()
+                # FIXME 20171213 niuqiang replace assert with sth else
                 assert len(from_num) > 40 and len(from_num) < 58
                 if(fraud_dict.has_key(from_num)):
                     fraud_txt.append(line)
@@ -67,6 +68,7 @@ def split_fraud_normal(record_data_path, output_data_path):
     with open(fraud_file_dir, 'w') as fraud_file:
         fraud_file.writelines(fraud_txt)
 
+    # FIXME 20171213 niuqiang fraud_file_dir and normal_file_dir are actually files, but used as dir in RecordFilter
     # 存储record_data中normal部分
     normal_dir = '%s/raw_data/normal/'%(output_data_path)
     if not os.path.exists(normal_dir):
