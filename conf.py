@@ -72,12 +72,10 @@ class RecordConf(object):
         start_time=[3, int],
         duration=[4, int],
         cost=[5, int],
-        # FIXME 20171213 remove column 'type'
-        type=[6, int],
-        call_type=[7, int],
-        longdis_type=[8, int],
-        roaming_type=[9, int],
-        voicecall_type=[10, int],
+        call_type=[6, int],
+        longdis_type=[7, int],
+        roaming_type=[8, int],
+        voicecall_type=[9, int],
     )
 
     TYPE_DICT = {

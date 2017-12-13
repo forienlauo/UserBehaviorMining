@@ -204,11 +204,6 @@ class RecordFilter(BaseProcess):
         if not (cost.isdigit() and cost >= 0):
             return False
 
-        # FIXME 20171213 remove column 'type'
-        type = row[RecordConf.RECORD_TABLE_IND['type'][0]]
-        if not len(type) > 0:
-            return False
-
         call_type = row[RecordConf.RECORD_TABLE_IND['call_type'][0]]
         if not len(call_type) > 0:
             return False
