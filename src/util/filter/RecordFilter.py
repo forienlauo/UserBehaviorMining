@@ -25,6 +25,7 @@ class RecordFilter(BaseProcess):
         if not os.path.exists(output_path):
             self.mkdirs(output_path)
 
+        # FIXME 20171214 remove incorrect cache checking
         for file in os.listdir(output_path):
             if(file.startswith(self.user_type)):
                 return self
@@ -201,6 +202,7 @@ class RecordFilter(BaseProcess):
         if not (duration.isdigit() and duration > 0):
             return False
 
+        # FIXME 20171214 permit case `cost < 0`
         cost = row[RecordConf.RECORD_TABLE_IND['cost'][0]]
         if not (cost.isdigit() and cost >= 0):
             return False
