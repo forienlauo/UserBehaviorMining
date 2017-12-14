@@ -165,6 +165,7 @@ class RecordFilter(BaseProcess):
         feature_dic[feature_name_std] = group.std()['cost']
         return feature_dic
 
+    # FIXME 20171214 remove column 'type'
     def fe_type(self, dataframe, feature_prefix):
         feature_dic = {}
         feature_name_median = "%s_median" % (feature_prefix)
