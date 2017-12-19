@@ -25,9 +25,6 @@ class RecordFilter(BaseProcess):
         if not os.path.exists(output_path):
             self.mkdirs(output_path)
 
-        for file in os.listdir(output_path):
-            if(file.startswith(self.user_type)):
-                return self
         record_file_list = glob.glob(self.input_data_path + '/*txt.md5')
         if(len(record_file_list) == 0):
             logging.info('No record data has found, please check the data path')
@@ -200,6 +197,9 @@ class RecordFilter(BaseProcess):
         if not (duration.isdigit() and duration > 0):
             return False
 
+        cost = row[RecordConf.RECORD_TABLE_IND['cost'][0]]
+        if not (len(cost) > 0 and ((cost.startswith("-") and cost[1:].isdigit()) or (cost.isdigit()))):
+            return False
 
         call_type = row[RecordConf.RECORD_TABLE_IND['call_type'][0]]
         if not len(call_type) > 0:
