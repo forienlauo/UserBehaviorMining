@@ -4,6 +4,7 @@
 import pandas as pd
 import logging
 import random
+import numpy as np
 import os
 from scipy import misc
 import sklearn.preprocessing
@@ -58,8 +59,8 @@ class FeaturesCNN(BaseProcess):
             ind_record_df.drop(['index'], axis=1, inplace=True)
 
             # 补全缺失值
-            ind_record_df.interpolate(inplace=True)
-            ind_record_df.fillna(method='bfill', inplace=True)
+            #ind_record_df.interpolate(inplace=True)
+            #ind_record_df.fillna(method='bfill', inplace=True)
             # 若全部为空，则
             if ind_record_df.dropna(how='all').empty:
                 continue
@@ -95,7 +96,8 @@ class FeaturesCNN(BaseProcess):
                 data_df.insert(0, '%s_%s' % (name, i), ind_record_df[name])
 
             # 对列归一化
-            data_arr = min_max_scaler.fit_transform(data_df)
+            #data_arr = min_max_scaler.fit_transform(data_df)
+            data_arr = np.asarray(data_df)
             columes_count = FeatureCNNConf.REPETITION_COUNTS * len(FeatureCNNConf.COLUMNS_NAME)
             data_pic = misc.imresize(data_arr.reshape(60, columes_count), 1.0)
             data_x_str = data_pic.reshape(1, -11).astype(str).tolist()[0]
