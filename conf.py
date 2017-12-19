@@ -38,7 +38,6 @@ class FeatureCNNConf(object):
         'fe_cost_mean',
         'fe_duration_mean',
         'fe_all_call_count_count',
-        'fe_type_median',
         'fe_cost_std',
         'fe_duration_std'
     ]
