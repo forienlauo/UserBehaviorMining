@@ -198,11 +198,6 @@ class RecordFilter(BaseProcess):
         if not (duration.isdigit() and duration > 0):
             return False
 
-        # FIXME 20171214 permit case `cost < 0`
-        cost = row[RecordConf.RECORD_TABLE_IND['cost'][0]]
-        if not (cost.isdigit() and cost >= 0):
-            return False
-
         call_type = row[RecordConf.RECORD_TABLE_IND['call_type'][0]]
         if not len(call_type) > 0:
             return False
