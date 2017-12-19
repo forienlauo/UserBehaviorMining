@@ -25,10 +25,6 @@ class RecordFilter(BaseProcess):
         if not os.path.exists(output_path):
             self.mkdirs(output_path)
 
-        # FIXME 20171214 remove incorrect cache checking
-        for file in os.listdir(output_path):
-            if(file.startswith(self.user_type)):
-                return self
         record_file_list = glob.glob(self.input_data_path + '/*txt.md5')
         if(len(record_file_list) == 0):
             logging.info('No record data has found, please check the data path')
