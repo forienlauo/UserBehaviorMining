@@ -13,10 +13,9 @@ class Prepare:
     def print_usage():
         print("""
  need args:
-    <do_clean>  (Empty the temporary data, 1: yes, 0: no)
-    <record_fraud_data_path>
-    <record_normal_data_path>
+    <record_data_path>
     <output_data_path>
+    <do_clean>
 """)
 
     @staticmethod
@@ -34,12 +33,10 @@ class Prepare:
             return -1
 
         if not os.path.exists(output_data_path):
-            logging.info('output_data_path do not exists: "%s"', output_data_path)
-            return -1
+            os.makedirs(output_data_path)
 
         if (do_clean == '1'):
-            if (os.path.exists(output_data_path)):
-                shutil.rmtree(output_data_path)
+            shutil.rmtree(output_data_path)
             os.makedirs(output_data_path)
 
         fraud_record_file_path, normal_record_file_path = split_fraud_normal(record_data_path, output_data_path)
@@ -63,7 +60,7 @@ class Prepare:
 
 if __name__ == '__main__':
     argv = [
-            '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/fraud_user/',
+            '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/little_data/fraud_user/',
             '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/',
             '0'
             ]

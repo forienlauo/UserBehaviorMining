@@ -138,8 +138,8 @@ class InfoFilter(BaseProcess):
 
 
 if __name__ == '__main__':
-    # info = InfoFilter(DataType.normal.name, '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/info/普通用户号码_md5.xlsx', '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/')
+    # info = InfoFilter(DataType.normal.name, '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/little_data/info/普通用户号码_md5.xlsx', '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/')
     # info.process()
 
-    info = InfoFilter(DataType.fraud.name, '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/info/list360诈骗电话-0512_md5.xlsx', '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/')
+    info = InfoFilter(DataType.fraud.name, '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/little_data/info/list360诈骗电话-0512_md5.xlsx', '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/')
     info.process()

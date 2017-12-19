@@ -169,7 +169,7 @@ class RecordFilter(BaseProcess):
         feature_dic = {}
         feature_name_median = "%s_median" % (feature_prefix)
         group = dataframe.groupby(['interval_in_window'])
-        feature_dic[feature_name_median] = group.median()['type']
+        feature_dic[feature_name_median] = group.median()['call_type']
         return feature_dic
 
 
@@ -200,9 +200,6 @@ class RecordFilter(BaseProcess):
         if not (duration.isdigit() and duration > 0):
             return False
 
-        cost = row[RecordConf.RECORD_TABLE_IND['cost'][0]]
-        if not (cost.isdigit() and cost >= 0):
-            return False
 
         call_type = row[RecordConf.RECORD_TABLE_IND['call_type'][0]]
         if not len(call_type) > 0:
@@ -220,9 +217,9 @@ class RecordFilter(BaseProcess):
 
 
 if __name__ == '__main__':
-    #partitionProcess('resource/big_data/raw/test_user', 'user')
-    record = RecordFilter(DataType.normal.name, '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/normal_user', '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/')
+    #partitionProcess('resource/big_data/little_data/test_user', 'user')
+    record = RecordFilter(DataType.normal.name, '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/little_data/normal_user', '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/')
     record.process()
 
-    record = RecordFilter(DataType.normal.name, '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/normal_user', '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/')
+    record = RecordFilter(DataType.normal.name, '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/little_data/normal_user', '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/')
     record.process()

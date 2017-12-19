@@ -84,7 +84,7 @@ class RecordConf(object):
         'distance': '2'
     }  # type类型映射
 
-    SAMPLING_MONTH = (1, 13)  # 采样月份的范围
+    SAMPLING_MONTH = (6, 7)  # 采样月份的范围
     SAMPLING_HOUR = [(7, 12), (12, 17), (17, 22)]  # 每天采样的时间段，单位为小时
 
 

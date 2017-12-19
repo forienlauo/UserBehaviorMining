@@ -26,7 +26,7 @@ def split_fraud_normal(record_data_path, output_data_path):
     split_symbol = '\t'
 
     fraud_dict = {}
-    with open('../configuration/fraud_num.txt', 'r') as fraud_num_file:
+    with open('./configuration/fraud_num.txt', 'r') as fraud_num_file:
         fraud_num_lines = fraud_num_file.readlines()
         for line in fraud_num_lines:
             from_num = line.strip()

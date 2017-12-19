@@ -99,8 +99,8 @@ class FeaturesCNN(BaseProcess):
             #data_arr = min_max_scaler.fit_transform(data_df)
             data_arr = np.asarray(data_df)
             columes_count = FeatureCNNConf.REPETITION_COUNTS * len(FeatureCNNConf.COLUMNS_NAME)
-            data_pic = misc.imresize(data_arr.reshape(60, columes_count), 1.0)
-            data_x_str = data_pic.reshape(1, -11).astype(str).tolist()[0]
+            #data_pic = misc.imresize(data_arr.reshape(60, columes_count), 1.0)
+            data_x_str = data_arr.reshape(1, -11).astype(str).tolist()[0]
             data_x_str = ','.join(data_x_str)
 
             self.mkdirs(os.path.dirname(self.get_output_path(from_num + '.uid')))
@@ -124,11 +124,11 @@ class FeaturesCNN(BaseProcess):
 if __name__ == '__main__':
 
     info = InfoFilter(DataType.normal.name,
-                      '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/info/普通用户号码_md5.xlsx',
+                      '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/little_data/info/普通用户号码_md5.xlsx',
                       '/Users/mayuchen/Documents/Python/Repositorygr/DL/Other/UserBehaviorMining/resource/data/')
 
     record = RecordFilter(DataType.normal.name,
-                          '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/normal_user',
+                          '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/little_data/normal_user',
                           '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/')
 
 

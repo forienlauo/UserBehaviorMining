@@ -125,7 +125,7 @@ class UserBehaviorFeaturesCNN(BaseProcess):
 
 if __name__ == '__main__':
 
-    input_dir = '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/raw/'
+    input_dir = '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/little_data/'
     output_dir = '/Users/mayuchen/Documents/Python/Repository/DL/Other/UserBehaviorMining/resource/data/'
 
 
