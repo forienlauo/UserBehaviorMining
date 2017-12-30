@@ -91,7 +91,8 @@ class ExampleAllocator(object):
     def __init__(
             self,
             wholeDataFilePaths,
-            trainExampleProportion=None, trainDataFilePaths=None, testDataFilePaths=None,
+            trainDataFilePaths=None, testDataFilePaths=None,
+            trainExampleProportion=None,
     ):
         super(ExampleAllocator, self).__init__()
         self.wholeDataFilePaths = wholeDataFilePaths

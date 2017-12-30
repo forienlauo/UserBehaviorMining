@@ -23,13 +23,13 @@ if __name__ == '__main__':
     train_data_x_path, train_data_y_path, \
     test_data_x_path, test_data_y_path, \
     train_example_proportion \
-        = sys.argv[1:]
+        = sys.argv[1:8]
 
     ExampleAllocator(
         (data_x_path, data_y_path,),
-        trainExampleProportion=(train_data_x_path, train_data_y_path,),
-        trainDataFilePaths=(test_data_x_path, test_data_y_path,),
-        testDataFilePaths=train_example_proportion,
+        trainDataFilePaths=(train_data_x_path, train_data_y_path,),
+        testDataFilePaths=(test_data_x_path, test_data_y_path,),
+        trainExampleProportion=train_example_proportion,
     ).allocate()
 
     sys.exit(0)
