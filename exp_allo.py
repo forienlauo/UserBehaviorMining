@@ -25,6 +25,8 @@ if __name__ == '__main__':
     train_example_proportion \
         = sys.argv[1:8]
 
+    train_example_proportion = float(train_example_proportion)
+
     ExampleAllocator(
         (data_x_path, data_y_path,),
         trainDataFilePaths=(train_data_x_path, train_data_y_path,),
