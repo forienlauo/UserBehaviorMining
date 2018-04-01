@@ -11,6 +11,10 @@ need args:
     <train_data_x_path> <train_data_y_path>
     <test_data_x_path> <test_data_y_path>
     <train_example_proportion>
+
+split examples for training and testing.
+any example has a proportion <train_example_proportion> to be split as a training example. 
+we do not guarantee a accurate percent, just a proportion. 
 """)
 
 
