@@ -13,8 +13,9 @@ from src.util.sampler import random_sample
 
 class CNNTrainer(object):
     # cnn configuration
-    CONV_STRIDES_H, CONV_STRIDES_W = 1, 1
     DEFAULT_CONV_HEIGHT, DEFAULT_CONV_WIDTH = 5, 5
+
+    CONV_STRIDES_H, CONV_STRIDES_W = 1, 1
 
     POOL_STRIDES_H, POOL_STRIDES_W = 2, 2
     POOL_SHAPE = [1, 2, 2, 1]
