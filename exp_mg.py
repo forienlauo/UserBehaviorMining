@@ -1,3 +1,4 @@
+# coding=utf-8
 import logging
 import os
 import shutil
@@ -5,12 +6,16 @@ import sys
 
 
 def print_usage():
-    print("""
+    print(""" 
 need args:
     <feature_dir_path> <data_dir_path>
     [do_clean]
 where
     do_clean is <1|0>
+
+merge examples from <feature_dir> into <data_dir>.
+each example in feature_dir consists of two files named '<uid>.uid' and '<uid>.label', 
+    and will be merged into '<data_dir>/data_x.txt' and '<data_dir>/data_y.txt'. 
 """)
 
 
