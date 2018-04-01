@@ -15,6 +15,9 @@ need args:
 where
     module_name is <prepare|train|predict>
     module_argv depends on concrete module
+
+a common interface for prepare, train and predict modules.
+predict module is experimental yet.
 """)
 
 
